@@ -35,12 +35,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl w-full mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Sliders className="w-6 h-6 text-emerald-600" />
-          <span>System Settings & Model Configuration</span>
+          <Sliders className="w-6 h-6 text-emerald-600 shrink-0" />
+          <span className="truncate">System Settings & Model Configuration</span>
         </h1>
         <p className="text-xs text-slate-500 mt-1">
           Configure BeeGuard AI neural endpoints, biosecurity thresholds, and cloud synchronization
@@ -56,9 +56,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Card 1: AI Diagnostic Engine */}
-        <div className="p-6 rounded-xl bg-white border border-slate-200 space-y-5 shadow-sm">
+        <div className="p-5 sm:p-6 rounded-xl bg-white border border-slate-200 space-y-5 shadow-sm">
           <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
-            <Cpu className="w-5 h-5 text-emerald-600" />
+            <Cpu className="w-5 h-5 text-emerald-600 shrink-0" />
             <span className="text-slate-900">AI Disease Diagnostic Inference Engine</span>
           </div>
 
@@ -96,10 +96,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
 
             <div className="md:col-span-2">
               <label className="block text-slate-600 font-medium mb-1.5 flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-slate-400" />
+                <Key className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>Hugging Face Inference API Token</span>
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="password"
                   value={huggingFaceKey}
@@ -109,7 +109,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
                 <button
                   type="button"
                   onClick={() => alert('API Connection Verified: Latency 142ms')}
-                  className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium border border-slate-200"
+                  className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 text-xs shrink-0 cursor-pointer"
                 >
                   Test Connection
                 </button>
@@ -119,9 +119,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
         </div>
 
         {/* Card 2: Biosecurity & Containment */}
-        <div className="p-6 rounded-xl bg-white border border-slate-200 space-y-5 shadow-sm">
+        <div className="p-5 sm:p-6 rounded-xl bg-white border border-slate-200 space-y-5 shadow-sm">
           <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
-            <ShieldAlert className="w-5 h-5 text-red-600" />
+            <ShieldAlert className="w-5 h-5 text-red-600 shrink-0" />
             <span className="text-slate-900">Biosecurity & Containment Policy</span>
           </div>
 
@@ -149,7 +149,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
                   type="checkbox"
                   checked={autoQuarantineAFB}
                   onChange={(e) => setAutoQuarantineAFB(e.target.checked)}
-                  className="w-4 h-4 accent-red-600 rounded"
+                  className="w-4 h-4 accent-red-600 rounded cursor-pointer"
                 />
                 <span>Auto-quarantine on American Foulbrood (AFB) detection</span>
               </label>
@@ -158,7 +158,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
                   type="checkbox"
                   checked={autoQuarantineEFB}
                   onChange={(e) => setAutoQuarantineEFB(e.target.checked)}
-                  className="w-4 h-4 accent-amber-600 rounded"
+                  className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
                 />
                 <span>Auto-quarantine on European Foulbrood (EFB) detection</span>
               </label>
@@ -167,7 +167,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
                   type="checkbox"
                   checked={autoQuarantineVarroa}
                   onChange={(e) => setAutoQuarantineVarroa(e.target.checked)}
-                  className="w-4 h-4 accent-amber-600 rounded"
+                  className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
                 />
                 <span>Flag hive for mite wash when Varroa exceeds 5%</span>
               </label>
@@ -176,9 +176,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
         </div>
 
         {/* Card 3: Cloud Sync */}
-        <div className="p-6 rounded-xl bg-white border border-slate-200 space-y-5 shadow-sm">
+        <div className="p-5 sm:p-6 rounded-xl bg-white border border-slate-200 space-y-5 shadow-sm">
           <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-            <BellRing className="w-5 h-5 text-emerald-600" />
+            <BellRing className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>Notification & Real-Time Sync</span>
           </div>
 
@@ -203,7 +203,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
                   type="checkbox"
                   checked={fcmEmergencyPush}
                   onChange={(e) => setFcmEmergencyPush(e.target.checked)}
-                  className="w-4 h-4 accent-emerald-600 rounded"
+                  className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
                 />
                 <span>Enable Firebase Cloud Messaging (FCM) high-priority channel</span>
               </label>
@@ -212,7 +212,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
         </div>
 
         {/* Buttons */}
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2">
           <button
             type="button"
             onClick={() => {
@@ -220,13 +220,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ onShowToast }) => {
               setQuarantineRadiusKm(15);
               setSyncIntervalSec(30);
             }}
-            className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium"
+            className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold cursor-pointer"
           >
             Reset Defaults
           </button>
           <button
             type="submit"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium shadow-sm transition-all"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>Save System Settings</span>

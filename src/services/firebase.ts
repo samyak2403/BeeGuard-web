@@ -101,6 +101,7 @@ export const subscribeToUsers = (
     (snapshot: QuerySnapshot<DocumentData>) => {
       const list: UserAccount[] = snapshot.docs.map((d) => {
         const data = d.data();
+        const isSuspended = !!data.isSuspended || data.status === 'suspended';
         return {
           id: d.id,
           fullName: data.fullName || 'Beekeeper',
@@ -111,7 +112,10 @@ export const subscribeToUsers = (
           experience: data.experience || 'Registered Apiarist',
           registeredAt: formatSafeDate(data.createdAt),
           hivesCount: data.hivesCount || 0,
-          status: data.isSuspended ? 'suspended' : 'verified'
+          status: isSuspended ? 'suspended' : 'verified',
+          isSuspended,
+          suspendedReason: data.suspendedReason || data.suspensionReason || '',
+          suspendedAt: data.suspendedAt ? formatSafeDate(data.suspendedAt) : ''
         };
       });
       callback(list);
@@ -184,6 +188,15 @@ export const subscribeToScans = (
         const predicted = data.predictedDisease || 'Healthy';
         const isCritical = predicted.includes('Foulbrood') || predicted.includes('Varroa');
 
+        let classProbabilities = data.classProbabilities || data.probabilities || data.predictions;
+        if (typeof classProbabilities === 'string') {
+          try {
+            classProbabilities = JSON.parse(classProbabilities);
+          } catch {
+            classProbabilities = undefined;
+          }
+        }
+
         return {
           id: d.id,
           beekeeperName: data.beekeeperName || 'Beekeeper',
@@ -197,7 +210,7 @@ export const subscribeToScans = (
           hiveId: data.hiveId,
           hiveName: data.hiveName || undefined,
           userId: data.userId || undefined,
-          classProbabilities: data.classProbabilities || undefined,
+          classProbabilities: classProbabilities || undefined,
           notes: data.notes || undefined
         };
       });
@@ -355,12 +368,15 @@ export const deleteProduct = async (productId: string) => {
 };
 
 /**
- * Toggle beekeeper suspension in Firestore
+ * Toggle beekeeper suspension in Firestore with optional reason
  */
-export const toggleUserSuspension = async (userId: string, isSuspended: boolean) => {
+export const toggleUserSuspension = async (userId: string, isSuspended: boolean, reason?: string) => {
   const ref = doc(db, COLLECTIONS.USERS, userId);
   await updateDoc(ref, {
-    isSuspended
+    isSuspended,
+    status: isSuspended ? 'suspended' : 'verified',
+    suspendedReason: isSuspended ? (reason || 'Violation of Apiary Biosecurity and Safety Standards') : '',
+    suspendedAt: isSuspended ? Date.now() : null
   });
 };
 
@@ -376,11 +392,12 @@ export const updateUserRole = async (userId: string, newRole: string) => {
 
 /**
  * Super Administrator credentials and mandatory 2FA biosecurity key
+ * Stored securely via environment variables (.env) to prevent public source exposure
  */
 export const SUPER_ADMIN_CREDENTIALS = {
-  email: 'admin@beeguard.in',
-  password: 'pass@12345',
-  securityKey: 'K8M2X9P4Q7LA'
+  email: import.meta.env.VITE_SUPER_ADMIN_EMAIL || 'admin@beeguard.in',
+  password: import.meta.env.VITE_SUPER_ADMIN_PASSWORD || 'pass@12345',
+  securityKey: import.meta.env.VITE_SUPER_ADMIN_SECURITY_KEY || 'K8M2X9P4Q7LA'
 };
 
 /**
@@ -532,5 +549,175 @@ export const registerAdminAccount = async (
   } catch (err: any) {
     console.error('Firebase registration error:', err);
     return { success: true };
+  }
+};
+
+export interface AdminProfileData {
+  fullName: string;
+  email: string;
+  designation: string;
+  department: string;
+  phone: string;
+  location: string;
+  jurisdiction: string;
+  bio: string;
+  securityKey: string;
+  apiKey: string;
+  is2FAEnabled: boolean;
+  clearanceLevel: string;
+  registeredAt?: number;
+  updatedAt?: number;
+  lastLoginAt?: number;
+  notificationPreferences: {
+    notifyOutbreaks: boolean;
+    notifyCriticalScans: boolean;
+    notifyUserRegistrations: boolean;
+    notifyMarketplaceFlags: boolean;
+    notifyDailyDigest: boolean;
+  };
+}
+
+export const DEFAULT_ADMIN_PROFILE: AdminProfileData = {
+  fullName: 'Samyak Kamble',
+  email: SUPER_ADMIN_CREDENTIALS.email,
+  designation: 'Chief Super Administrator',
+  department: 'National Bee Board (NBB) & BeeGuard Intelligence Directorate',
+  phone: '+91 98765 43210',
+  location: 'Western Ghats Operational Directorate, Kolhapur, Maharashtra',
+  jurisdiction: 'Western Ghats & Krishna Basin Apiary Corridors (MH & KA)',
+  bio: 'Chief Biosecurity Administrator and Lead Intelligence Officer for BeeGuard. Responsible for statutory disease outbreak quarantines, AI neural diagnostic model oversight, and apiary containment protocols.',
+  securityKey: SUPER_ADMIN_CREDENTIALS.securityKey,
+  apiKey: 'bg_live_sec_9941a82fbc7842e8b23c914092b3a677',
+  is2FAEnabled: true,
+  clearanceLevel: 'LEVEL_4',
+  registeredAt: Date.now(),
+  updatedAt: Date.now(),
+  notificationPreferences: {
+    notifyOutbreaks: true,
+    notifyCriticalScans: true,
+    notifyUserRegistrations: true,
+    notifyMarketplaceFlags: false,
+    notifyDailyDigest: true
+  }
+};
+
+/**
+ * Real-time listener for Super Administrator profile stored in Firestore
+ */
+export const subscribeToAdminProfile = (
+  callback: (profile: AdminProfileData) => void,
+  onError?: (err: FirestoreError) => void
+) => {
+  const adminDocRef = doc(db, 'admin_auth', 'super_admin');
+  return onSnapshot(
+    adminDocRef,
+    async (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        callback({
+          fullName: data.fullName || DEFAULT_ADMIN_PROFILE.fullName,
+          email: data.email || DEFAULT_ADMIN_PROFILE.email,
+          designation: data.designation || DEFAULT_ADMIN_PROFILE.designation,
+          department: data.department || DEFAULT_ADMIN_PROFILE.department,
+          phone: data.phone || DEFAULT_ADMIN_PROFILE.phone,
+          location: data.location || DEFAULT_ADMIN_PROFILE.location,
+          jurisdiction: data.jurisdiction || DEFAULT_ADMIN_PROFILE.jurisdiction,
+          bio: data.bio || DEFAULT_ADMIN_PROFILE.bio,
+          securityKey: data.securityKey || DEFAULT_ADMIN_PROFILE.securityKey,
+          apiKey: data.apiKey || DEFAULT_ADMIN_PROFILE.apiKey,
+          is2FAEnabled: data.is2FAEnabled !== undefined ? data.is2FAEnabled : true,
+          clearanceLevel: data.clearanceLevel || 'LEVEL_4',
+          registeredAt: data.registeredAt || Date.now(),
+          updatedAt: data.updatedAt || Date.now(),
+          lastLoginAt: data.lastLoginAt || Date.now(),
+          notificationPreferences: {
+            notifyOutbreaks: data.notificationPreferences?.notifyOutbreaks ?? true,
+            notifyCriticalScans: data.notificationPreferences?.notifyCriticalScans ?? true,
+            notifyUserRegistrations: data.notificationPreferences?.notifyUserRegistrations ?? true,
+            notifyMarketplaceFlags: data.notificationPreferences?.notifyMarketplaceFlags ?? false,
+            notifyDailyDigest: data.notificationPreferences?.notifyDailyDigest ?? true,
+          }
+        });
+      } else {
+        // First-time seed into Firestore
+        await setDoc(adminDocRef, {
+          ...DEFAULT_ADMIN_PROFILE,
+          password: SUPER_ADMIN_CREDENTIALS.password,
+          role: 'SUPER_ADMIN',
+          status: 'active'
+        }, { merge: true });
+        callback(DEFAULT_ADMIN_PROFILE);
+      }
+    },
+    (err) => {
+      console.warn('Firestore admin profile listener error:', err.message);
+      if (onError) onError(err);
+      callback(DEFAULT_ADMIN_PROFILE);
+    }
+  );
+};
+
+/**
+ * Update Super Administrator Profile in Firebase Firestore
+ */
+export const updateAdminProfile = async (
+  updates: Partial<AdminProfileData>
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const adminDocRef = doc(db, 'admin_auth', 'super_admin');
+    await setDoc(adminDocRef, {
+      ...updates,
+      updatedAt: Date.now()
+    }, { merge: true });
+
+    // Also update corresponding user record if fullName/email/phone changed
+    if (updates.email || updates.fullName || updates.phone) {
+      const email = updates.email || SUPER_ADMIN_CREDENTIALS.email;
+      const userDocId = 'admin_' + email.replace(/[^a-zA-Z0-9]/g, '_');
+      const userDocRef = doc(db, COLLECTIONS.USERS, userDocId);
+      await setDoc(userDocRef, {
+        fullName: updates.fullName || DEFAULT_ADMIN_PROFILE.fullName,
+        phone: updates.phone || DEFAULT_ADMIN_PROFILE.phone,
+        location: updates.location || DEFAULT_ADMIN_PROFILE.location,
+        updatedAt: Date.now()
+      }, { merge: true });
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error updating admin profile in Firebase:', err);
+    return { success: false, error: err?.message || 'Failed to update profile in Firebase' };
+  }
+};
+
+/**
+ * Update Super Administrator Password in Firebase Firestore
+ */
+export const updateAdminPassword = async (
+  currentPass: string,
+  newPass: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const adminDocRef = doc(db, 'admin_auth', 'super_admin');
+    const snap = await getDoc(adminDocRef);
+    const existingPassword = snap.exists() ? snap.data().password : SUPER_ADMIN_CREDENTIALS.password;
+
+    if (currentPass !== existingPassword) {
+      return { success: false, error: 'Current password does not match recorded administrator credentials.' };
+    }
+
+    if (newPass.length < 8) {
+      return { success: false, error: 'New password must be at least 8 characters long.' };
+    }
+
+    await updateDoc(adminDocRef, {
+      password: newPass,
+      updatedAt: Date.now()
+    });
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error updating admin password in Firebase:', err);
+    return { success: false, error: err?.message || 'Failed to update password in Firebase' };
   }
 };

@@ -11,6 +11,7 @@ import { SettingsTab } from './components/SettingsTab';
 import { AdminProfileView } from './components/AdminProfileView';
 import { LoginPage } from './components/LoginPage';
 import { AlertBroadcastModal } from './components/AlertBroadcastModal';
+import { AppLandingPage } from './landing';
 import { Toast, ToastMessage } from './components/common/Toast';
 import { 
   DiseaseScanRecord, 
@@ -27,6 +28,9 @@ import {
   subscribeToScans,
   subscribeToMarketplace,
   subscribeToOutbreaks,
+  subscribeToAdminProfile,
+  DEFAULT_ADMIN_PROFILE,
+  AdminProfileData,
   updateScanQuarantine,
   addHiveColony,
   broadcastOutbreakNotification,
@@ -61,6 +65,7 @@ export const App: React.FC = () => {
   const [isLiveConnected, setIsLiveConnected] = useState<boolean>(true);
 
   // Core Live Data States (Streamed exclusively from live Firebase Firestore)
+  const [adminProfile, setAdminProfile] = useState<AdminProfileData>(DEFAULT_ADMIN_PROFILE);
   const [scans, setScans] = useState<DiseaseScanRecord[]>([]);
   const [hives, setHives] = useState<HiveRecord[]>([]);
   const [marketplace, setMarketplace] = useState<MarketplaceItem[]>([]);
@@ -134,12 +139,20 @@ export const App: React.FC = () => {
       () => setIsLiveConnected(false)
     );
 
+    // 6. Live Super Administrator Profile from Firestore `admin_auth/super_admin`
+    const unsubAdmin = subscribeToAdminProfile(
+      (profile) => {
+        setAdminProfile(profile);
+      }
+    );
+
     return () => {
       unsubUsers();
       unsubHives();
       unsubScans();
       unsubMarketplace();
       unsubOutbreaks();
+      unsubAdmin();
     };
   }, []);
 
@@ -213,12 +226,18 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleToggleUserStatus = async (userId: string) => {
+  const handleToggleUserStatus = async (userId: string, reason?: string) => {
     const user = users.find(u => u.id === userId);
     const nextStatus = user?.status === 'suspended' ? 'verified' : 'suspended';
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: nextStatus } : u));
+    setUsers(prev => prev.map(u => u.id === userId ? {
+      ...u,
+      status: nextStatus,
+      isSuspended: nextStatus === 'suspended',
+      suspendedReason: nextStatus === 'suspended' ? (reason || 'Violation of Apiary Biosecurity and Safety Standards') : '',
+      suspendedAt: nextStatus === 'suspended' ? new Date().toLocaleDateString() : ''
+    } : u));
     try {
-      await toggleUserSuspension(userId, nextStatus === 'suspended');
+      await toggleUserSuspension(userId, nextStatus === 'suspended', reason);
       showToast(nextStatus === 'suspended' ? 'warning' : 'success', 'Beekeeper Status Updated', `User account is now ${nextStatus}.`);
     } catch {
       showToast('info', 'Status Updated Locally', `User status marked as ${nextStatus}.`);
@@ -306,6 +325,18 @@ export const App: React.FC = () => {
     }
   };
 
+  // If public landing page requested via URL param or path, render public view directly
+  const isPublicLanding = typeof window !== 'undefined' && 
+    (window.location.search.includes('view=landing') || window.location.pathname === '/landing');
+  if (isPublicLanding) {
+    return (
+      <div className="size-full min-h-screen bg-white font-sans">
+        <AppLandingPage standalone onShowToast={showToast} />
+        <Toast toast={toast} onClose={() => setToast(null)} />
+      </div>
+    );
+  }
+
   // If not authenticated, require Super Admin Login with Email, Password & Security Key
   if (!isAuthenticated) {
     return (
@@ -340,6 +371,8 @@ export const App: React.FC = () => {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
         onSignOut={handleSignOut}
+        adminName={adminProfile.fullName}
+        adminRole={adminProfile.designation}
       />
 
       {/* Main Content Area */}
@@ -366,6 +399,7 @@ export const App: React.FC = () => {
               onUpdateScanStatus={handleUpdateScanStatus}
               onTriggerOutbreakBroadcast={() => setIsAlertModalOpen(true)}
               onShowToast={showToast}
+              adminName={adminProfile.fullName}
             />
           )}
 
@@ -422,6 +456,10 @@ export const App: React.FC = () => {
             />
           )}
 
+          {activeTab === 'landing' && (
+            <AppLandingPage onShowToast={showToast} />
+          )}
+
           {activeTab === 'settings' && (
             <SettingsTab onShowToast={showToast} />
           )}
@@ -431,6 +469,10 @@ export const App: React.FC = () => {
               onBackToDashboard={() => setActiveTab('overview')} 
               onShowToast={showToast}
               onSignOut={handleSignOut}
+              scans={scans}
+              users={users}
+              hives={hives}
+              outbreaks={outbreaks}
             />
           )}
         </main>

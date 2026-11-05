@@ -16,6 +16,7 @@ interface OverviewTabProps {
   onUpdateScanStatus?: (scanId: string, newStatus: 'CONFIRMED' | 'QUARANTINED' | 'RESOLVED') => void;
   onTriggerOutbreakBroadcast?: (diseaseName: string, region: string) => void;
   onShowToast?: (type: 'success' | 'warning' | 'info', title: string, desc?: string) => void;
+  adminName?: string;
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -26,7 +27,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onNavigateToOutbreaks,
   onUpdateScanStatus,
   onTriggerOutbreakBroadcast,
-  onShowToast
+  onShowToast,
+  adminName
 }) => {
   const [selectedScan, setSelectedScan] = useState<DiseaseScanRecord | null>(null);
 
@@ -97,11 +99,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   }, [recentScans]);
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl w-full mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto space-y-6">
       {/* Welcome Title */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">
-          Welcome back, Samyak!
+          Welcome back, {adminName || 'Samyak'}!
         </h1>
         <p className="text-slate-600 text-sm">
           Here's your apiary and bee colony health overview. Click any detection to review full diagnostic dossier.
@@ -111,22 +113,22 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Emergency Alert Banner if any */}
       {activeOutbreaks.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center text-red-600 shrink-0">
               <ShieldAlert className="w-5 h-5" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-red-900">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-red-900 truncate">
                 Active Outbreak: {activeOutbreaks[0].disease} ({activeOutbreaks[0].region})
               </p>
-              <p className="text-xs text-red-700 mt-0.5">
+              <p className="text-xs text-red-700 mt-0.5 line-clamp-1">
                 {activeOutbreaks[0].affectedHives} colonies quarantined for biosecurity containment.
               </p>
             </div>
           </div>
           <button
             onClick={onNavigateToOutbreaks}
-            className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium self-start sm:self-auto shrink-0 shadow-sm transition-colors"
+            className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold self-start sm:self-auto shrink-0 shadow-sm transition-colors cursor-pointer"
           >
             View Containment
           </button>
@@ -134,33 +136,33 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       )}
 
       {/* 4 Stat Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-6 md:mt-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
         {statCards.map((card, idx) => (
-          <div key={idx} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div className="text-sm text-slate-600 mb-1">{card.title}</div>
-            <div className="text-2xl font-bold text-slate-900">{card.value}</div>
-            <div className={`text-sm mt-2 ${card.trendColor}`}>{card.trend}</div>
+          <div key={idx} className="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-slate-200 min-w-0">
+            <div className="text-xs sm:text-sm font-medium text-slate-500 mb-1 truncate">{card.title}</div>
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{card.value}</div>
+            <div className={`text-xs sm:text-sm mt-2 font-medium truncate ${card.trendColor}`}>{card.trend}</div>
           </div>
         ))}
       </div>
 
       {/* Recent Disease Detections (Clickable Launcher) */}
-      <div className="mt-6 md:mt-8 bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div className="min-w-0">
             <h2 className="text-lg font-semibold text-slate-900">Recent Disease Detections</h2>
             <p className="text-xs text-slate-500 mt-0.5">Click any detection to open full microscopic diagnostic dossier</p>
           </div>
           <button
             onClick={onNavigateToScans}
-            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 hover:underline"
+            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 hover:underline shrink-0 cursor-pointer self-start sm:self-auto"
           >
             <span>View All Scans ({recentScans.length})</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {recentScans.length === 0 ? (
             <div className="py-8 text-center text-slate-500 text-xs">
               <p className="font-semibold text-slate-700">No field disease scans recorded in Firebase</p>
@@ -170,14 +172,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             recentScans.slice(0, 5).map((scan) => {
             const isHealthy = scan.diseaseName === 'Healthy';
             const isCritical = scan.urgencyLevel === 'CRITICAL';
+            const confPct = Math.round(scan.confidence > 1 ? scan.confidence : scan.confidence * 100);
 
             return (
               <div
                 key={scan.id}
                 onClick={() => setSelectedScan(scan)}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/40 rounded-xl px-4 transition-all cursor-pointer group shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/40 rounded-xl px-3.5 sm:px-4 transition-all cursor-pointer group shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                   {/* Specimen Photo Thumbnail */}
                   <div className="relative w-12 h-12 rounded-lg bg-slate-900 overflow-hidden shrink-0 shadow-sm border border-slate-200 group-hover:scale-105 transition-transform">
                     <img 
@@ -189,21 +192,21 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
                   </div>
 
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <p className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors truncate">
                         {scan.diseaseName}
                       </p>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
                         isCritical
                           ? 'bg-rose-100 text-rose-800'
                           : isHealthy
                           ? 'bg-emerald-100 text-emerald-800'
                           : 'bg-amber-100 text-amber-800'
                       }`}>
-                        {Math.round(scan.confidence * 100)}% Conf.
+                        {confPct}% Conf.
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${
                         scan.urgencyLevel === 'CRITICAL'
                           ? 'bg-rose-500 text-white'
                           : scan.urgencyLevel === 'HIGH'
@@ -216,18 +219,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-500 flex items-center gap-2 mt-1">
-                      <span>{scan.beekeeperName}</span>
-                      <span>•</span>
-                      <span className="truncate">{scan.apiaryLocation}</span>
-                      <span>•</span>
-                      <span className="text-slate-400">{scan.timestamp}</span>
+                    <p className="text-xs text-slate-500 flex items-center gap-1.5 sm:gap-2 mt-1 min-w-0">
+                      <span className="truncate max-w-[120px] sm:max-w-[160px] font-medium text-slate-700">{scan.beekeeperName}</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="truncate flex-1">{scan.apiaryLocation}</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-slate-400 shrink-0 text-[11px]">{scan.timestamp}</span>
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-3 pl-16 sm:pl-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                <div className="flex items-center justify-between sm:justify-end gap-3 pl-15 sm:pl-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 ${
                     scan.status === 'RESOLVED' 
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                       : scan.status === 'QUARANTINED' 
@@ -237,8 +240,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     {scan.status}
                   </span>
 
-                  <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 group-hover:text-emerald-700">
-                    <span className="hidden md:inline">Inspect Dossier</span>
+                  <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 group-hover:text-emerald-700 shrink-0">
+                    <span className="hidden sm:inline">Inspect Dossier</span>
                     <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
@@ -250,7 +253,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       </div>
 
       {/* Epidemiological Distribution Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-1">Epidemiological Pathology Distribution</h2>
         <p className="text-xs text-slate-500 mb-5">
           Live classification telemetry across {recentScans.length} AI CNN verified field samples from Firebase
@@ -260,8 +263,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           {diseaseDistribution.map((item, idx) => (
             <div key={idx} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-slate-700">{item.name}</span>
-                <span className="text-slate-500">
+                <span className="font-medium text-slate-700 truncate mr-2">{item.name}</span>
+                <span className="text-slate-500 shrink-0">
                   {item.count} cases <strong className="text-slate-800">({item.pct}%)</strong>
                 </span>
               </div>

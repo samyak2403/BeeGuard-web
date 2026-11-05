@@ -81,7 +81,7 @@ export const AlertBroadcastModal: React.FC<AlertBroadcastModalProps> = ({
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-slate-600 font-medium mb-1">Target Region</label>
               <input
@@ -129,17 +129,17 @@ export const AlertBroadcastModal: React.FC<AlertBroadcastModalProps> = ({
             />
           </div>
 
-          <div className="pt-3 flex justify-end gap-2">
+          <div className="pt-3 flex flex-col-reverse sm:flex-row justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium"
+              className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium shadow-sm transition-colors"
+              className="flex items-center justify-center gap-2 px-5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium shadow-sm transition-colors cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Transmit Push Alert</span>

@@ -91,32 +91,32 @@ export const HiveDetailView: React.FC<HiveDetailViewProps> = ({
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl w-full mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto space-y-6">
       {/* Top Header & Navigation Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-all active:scale-95"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-all active:scale-95 shrink-0 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 text-emerald-600" />
             <span>Back to Colony Fleet</span>
           </button>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
             <span>Fleet</span>
             <span>/</span>
             <span>Colonies</span>
             <span>/</span>
-            <span className="text-slate-800 font-semibold truncate max-w-[200px]">{hive.name}</span>
+            <span className="text-slate-800 font-semibold truncate max-w-[180px] md:max-w-[260px]">{hive.name}</span>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
           <button
             onClick={handleCopyId}
             title="Copy Hive ID"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-xs font-mono shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-xs font-mono shadow-sm transition-all cursor-pointer"
           >
             {isCopiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
             <span>UID: {hive.id.slice(0, 8)}...</span>
@@ -125,7 +125,7 @@ export const HiveDetailView: React.FC<HiveDetailViewProps> = ({
           {isInfected && onTriggerOutbreakBroadcast && (
             <button
               onClick={() => onTriggerOutbreakBroadcast(hive.primaryDiagnosis || 'Brood Infection', hive.apiaryLocation)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white text-xs font-semibold shadow-sm transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               <Radio className="w-3.5 h-3.5" />
               <span>Broadcast Outbreak</span>
@@ -136,7 +136,7 @@ export const HiveDetailView: React.FC<HiveDetailViewProps> = ({
           <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 text-xs font-semibold shadow-sm">
             <button
               onClick={() => handleHealthChange('HEALTHY')}
-              className={`px-2.5 py-1 rounded-md transition-all ${
+              className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                 isHealthy ? 'bg-emerald-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -144,7 +144,7 @@ export const HiveDetailView: React.FC<HiveDetailViewProps> = ({
             </button>
             <button
               onClick={() => handleHealthChange('WARNING')}
-              className={`px-2.5 py-1 rounded-md transition-all ${
+              className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                 isWarning ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -152,7 +152,7 @@ export const HiveDetailView: React.FC<HiveDetailViewProps> = ({
             </button>
             <button
               onClick={() => handleHealthChange('INFECTED')}
-              className={`px-2.5 py-1 rounded-md transition-all ${
+              className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                 isInfected ? 'bg-rose-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -163,26 +163,26 @@ export const HiveDetailView: React.FC<HiveDetailViewProps> = ({
       </div>
 
       {/* Main Colony Hero Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-5 min-w-0 flex-1">
+            <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
               isInfected
                 ? 'bg-gradient-to-br from-rose-500 to-red-600 text-white'
                 : isWarning
                 ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white'
                 : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
             }`}>
-              {isInfected ? <ShieldAlert className="w-8 h-8" /> : isWarning ? <AlertTriangle className="w-8 h-8" /> : <ShieldCheck className="w-8 h-8" />}
+              {isInfected ? <ShieldAlert className="w-7 h-7 sm:w-8 sm:h-8" /> : isWarning ? <AlertTriangle className="w-7 h-7 sm:w-8 sm:h-8" /> : <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8" />}
             </div>
 
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Apiary Colony Profile
               </div>
-              <div className="flex items-center gap-3 flex-wrap mt-0.5">
-                <h1 className="text-xl md:text-2xl font-bold text-slate-900">{hive.name}</h1>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap mt-0.5">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{hive.name}</h1>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border shrink-0 ${
                   isInfected 
                     ? 'bg-rose-50 text-rose-700 border-rose-200' 
                     : isWarning 
@@ -193,23 +193,23 @@ export const HiveDetailView: React.FC<HiveDetailViewProps> = ({
                 </span>
 
                 {hive.primaryDiagnosis && (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 shrink-0">
                     Diagnosis: {hive.primaryDiagnosis}
                   </span>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-500">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="font-medium text-slate-700">{hive.apiaryLocation}</span>
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="font-medium text-slate-700 truncate max-w-[200px]">{hive.apiaryLocation}</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>Beekeeper: <strong className="text-slate-800">{hive.beekeeperName}</strong></span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>Last Inspected: {hive.lastInspectionDate}</span>
                 </span>
               </div>

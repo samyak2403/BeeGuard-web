@@ -256,33 +256,110 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
 
   // All 7 Standard Categories
   const allCategories = [
-    'Chalkbrood',
-    'European Foulbrood (EFB)',
-    'Sacbrood',
+    'Healthy',
     'Varroa Mites',
     'American Foulbrood (AFB)',
+    'European Foulbrood (EFB)',
     'Nosema',
-    'Healthy'
+    'Chalkbrood',
+    'Sacbrood'
   ];
 
-  // Synthesize or use real probabilities
+  // Robustly normalize or synthesize probabilities as clean percentages (0-100)
   const probabilities = React.useMemo(() => {
-    if (scan.classProbabilities && Object.keys(scan.classProbabilities).length > 0) {
-      return scan.classProbabilities;
-    }
-    const targetPct = Math.round(scan.confidence * 100);
-    const remainder = Math.max(0, 100 - targetPct);
-    const otherCats = allCategories.filter(c => c !== scan.diseaseName);
-    const perCat = Math.floor(remainder / otherCats.length);
-    const leftover = remainder - perCat * otherCats.length;
-
     const map: Record<string, number> = {};
-    map[scan.diseaseName] = targetPct;
-    otherCats.forEach((c, idx) => {
-      map[c] = perCat + (idx === 0 ? leftover : 0);
+
+    if (scan.classProbabilities && typeof scan.classProbabilities === 'object') {
+      const keys = Object.keys(scan.classProbabilities);
+      if (keys.length > 0) {
+        allCategories.forEach(cat => {
+          let rawVal: any = scan.classProbabilities![cat];
+
+          if (rawVal === undefined) {
+            const catLower = cat.toLowerCase();
+            const matchedKey = keys.find(k => {
+              const kLower = k.toLowerCase();
+              return kLower === catLower ||
+                     (catLower.includes('afb') && kLower.includes('american')) ||
+                     (catLower.includes('efb') && kLower.includes('european')) ||
+                     (catLower.includes('varroa') && kLower.includes('varroa')) ||
+                     (catLower.includes('chalk') && kLower.includes('chalk')) ||
+                     (catLower.includes('sac') && kLower.includes('sac')) ||
+                     (catLower.includes('nosema') && kLower.includes('nosema')) ||
+                     (catLower.includes('healthy') && kLower.includes('healthy'));
+            });
+            if (matchedKey) {
+              rawVal = scan.classProbabilities![matchedKey];
+            }
+          }
+
+          if (rawVal !== undefined) {
+            const numVal = typeof rawVal === 'number' ? rawVal : parseFloat(rawVal);
+            if (!isNaN(numVal)) {
+              // If between 0 and 1 (e.g. 0.6382 or 0.0411), convert to percentage
+              const pct = numVal <= 1.0 ? numVal * 100 : numVal;
+              map[cat] = Math.round(pct * 10) / 10;
+            } else {
+              map[cat] = 0;
+            }
+          } else {
+            map[cat] = 0;
+          }
+        });
+
+        // Ensure detected class has at least the main scan confidence if it was 0
+        const topCat = allCategories.find(c => 
+          c.toLowerCase() === scan.diseaseName.toLowerCase() ||
+          c.toLowerCase().includes(scan.diseaseName.toLowerCase()) ||
+          scan.diseaseName.toLowerCase().includes(c.toLowerCase())
+        ) || scan.diseaseName;
+
+        const mainConfPct = Math.round(scan.confidence > 1 ? scan.confidence : scan.confidence * 100);
+        if ((!map[topCat] || map[topCat] === 0) && mainConfPct > 0) {
+          map[topCat] = mainConfPct;
+        }
+
+        if (Object.values(map).some(v => v > 0)) {
+          return map;
+        }
+      }
+    }
+
+    // Fallback: Synthesize clean Softmax distribution based on confidence
+    const targetPct = Math.round(scan.confidence > 1 ? scan.confidence : scan.confidence * 100);
+    const clampedTarget = Math.min(98, Math.max(10, targetPct));
+    const remainder = 100 - clampedTarget;
+    const otherCats = allCategories.filter(c => 
+      c.toLowerCase() !== scan.diseaseName.toLowerCase() &&
+      !c.toLowerCase().includes(scan.diseaseName.toLowerCase()) &&
+      !scan.diseaseName.toLowerCase().includes(c.toLowerCase())
+    );
+    const perCat = Math.floor((remainder / otherCats.length) * 10) / 10;
+    const leftover = Math.round((remainder - perCat * otherCats.length) * 10) / 10;
+
+    allCategories.forEach(c => {
+      const isThisTarget = c.toLowerCase() === scan.diseaseName.toLowerCase() ||
+        c.toLowerCase().includes(scan.diseaseName.toLowerCase()) ||
+        scan.diseaseName.toLowerCase().includes(c.toLowerCase());
+      if (isThisTarget) {
+        map[c] = clampedTarget;
+      } else {
+        const idx = otherCats.indexOf(c);
+        map[c] = Math.round((perCat + (idx === 0 ? leftover : 0)) * 10) / 10;
+      }
     });
+
     return map;
   }, [scan]);
+
+  // Sort categories by probability descending
+  const sortedCategories = React.useMemo(() => {
+    return [...allCategories].sort((a, b) => {
+      const probA = probabilities[a] ?? 0;
+      const probB = probabilities[b] ?? 0;
+      return probB - probA;
+    });
+  }, [probabilities]);
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(scan.id);
@@ -304,33 +381,35 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
     }
   };
 
+  const confPct = Math.round(scan.confidence > 1 ? scan.confidence : scan.confidence * 100);
+
   return (
-    <div className="p-4 md:p-8 max-w-6xl w-full mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto space-y-6">
       {/* Top Header & Navigation Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-all active:scale-95"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-all active:scale-95 shrink-0 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 text-emerald-600" />
             <span>Back to Scans List</span>
           </button>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
             <span>Intelligence</span>
             <span>/</span>
             <span>Disease Scans</span>
             <span>/</span>
-            <span className="text-slate-800 font-semibold truncate max-w-[200px]">{scan.diseaseName}</span>
+            <span className="text-slate-800 font-semibold truncate max-w-[180px] md:max-w-[260px]">{scan.diseaseName}</span>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
           <button
             onClick={handleCopyId}
             title="Copy Scan ID"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-xs font-mono shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-xs font-mono shadow-sm transition-all cursor-pointer"
           >
             {isCopiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
             <span>ID: {scan.id.slice(0, 8)}...</span>
@@ -339,7 +418,7 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
           {onTriggerOutbreakBroadcast && !isHealthy && (
             <button
               onClick={() => onTriggerOutbreakBroadcast(scan.diseaseName, scan.apiaryLocation)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-semibold shadow-sm transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               <Radio className="w-3.5 h-3.5" />
               <span>Broadcast Alert</span>
@@ -349,7 +428,7 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
           {isQuarantined ? (
             <button
               onClick={() => handleStatusChange('RESOLVED')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold shadow-sm transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Mark Quarantine Resolved</span>
@@ -357,7 +436,7 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
           ) : (
             <button
               onClick={() => handleStatusChange('QUARANTINED')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold shadow-sm transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               <span>Flag for Biosecurity Quarantine</span>
@@ -367,35 +446,35 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
       </div>
 
       {/* Main Diagnostic Header Banner Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-5 min-w-0 flex-1">
+            <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
               isCritical
                 ? 'bg-gradient-to-br from-rose-500 to-red-600 text-white'
                 : isHealthy
                 ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
                 : 'bg-gradient-to-br from-amber-500 to-orange-600 text-white'
             }`}>
-              {isCritical ? <ShieldAlert className="w-8 h-8" /> : isHealthy ? <CheckCircle2 className="w-8 h-8" /> : <Activity className="w-8 h-8" />}
+              {isCritical ? <ShieldAlert className="w-7 h-7 sm:w-8 sm:h-8" /> : isHealthy ? <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8" /> : <Activity className="w-7 h-7 sm:w-8 sm:h-8" />}
             </div>
 
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 AI Predicted Condition
               </div>
-              <div className="flex items-center gap-3 flex-wrap mt-0.5">
-                <h1 className="text-xl md:text-2xl font-bold text-slate-900">{scan.diseaseName}</h1>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap mt-0.5">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{scan.diseaseName}</h1>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold shrink-0 ${
                   isCritical 
                     ? 'bg-rose-100 text-rose-800' 
                     : isHealthy 
                     ? 'bg-emerald-100 text-emerald-800' 
                     : 'bg-amber-100 text-amber-800'
                 }`}>
-                  {Math.round(scan.confidence * 100)}% Confidence
+                  {confPct}% Confidence
                 </span>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
                   scan.urgencyLevel === 'CRITICAL'
                     ? 'bg-rose-500 text-white'
                     : scan.urgencyLevel === 'HIGH'
@@ -406,7 +485,7 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
                 }`}>
                   {scan.urgencyLevel} Urgency
                 </span>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border shrink-0 ${
                   isQuarantined
                     ? 'bg-rose-50 text-rose-700 border-rose-200'
                     : isResolved
@@ -417,17 +496,17 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-500">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 text-xs text-slate-500">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="font-medium text-slate-700">{scan.apiaryLocation}</span>
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="font-medium text-slate-700 truncate max-w-[200px]">{scan.apiaryLocation}</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>Beekeeper: <strong className="text-slate-800">{scan.beekeeperName}</strong></span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>Timestamp: {scan.timestamp}</span>
                 </span>
               </div>
@@ -488,31 +567,43 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
               </p>
             </div>
 
-            <div className="space-y-3 pt-1">
-              {allCategories.map(category => {
-                const prob = probabilities[category] || 0;
-                const isTarget = category === scan.diseaseName;
+            <div className="space-y-3.5 pt-1">
+              {sortedCategories.map(category => {
+                const prob = probabilities[category] ?? 0;
+                const isTarget = category.toLowerCase() === scan.diseaseName.toLowerCase() ||
+                  category.toLowerCase().includes(scan.diseaseName.toLowerCase()) ||
+                  scan.diseaseName.toLowerCase().includes(category.toLowerCase());
+
+                const barColor = isTarget
+                  ? (isHealthy ? 'bg-emerald-500' : 'bg-rose-500')
+                  : prob > 15
+                  ? 'bg-amber-500'
+                  : 'bg-amber-400';
+
+                const textColor = isTarget
+                  ? (isHealthy ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold')
+                  : 'text-slate-600 font-semibold';
+
+                const displayPct = prob % 1 === 0 ? `${prob}%` : `${prob.toFixed(1)}%`;
+                const barWidth = Math.min(100, Math.max(prob > 0 ? 3 : 0, prob));
 
                 return (
-                  <div key={category} className="space-y-1">
+                  <div key={category} className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
-                      <span className={`font-medium ${isTarget ? 'font-bold text-slate-900' : 'text-slate-600'}`}>
-                        {category}
+                      <span className={`flex items-center gap-1.5 ${isTarget ? 'font-bold text-slate-900' : 'text-slate-600'}`}>
+                        {isTarget && (
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${isHealthy ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`} />
+                        )}
+                        <span>{category}</span>
                       </span>
-                      <span className={`font-bold ${isTarget ? 'text-rose-600' : 'text-amber-600'}`}>
-                        {prob}%
+                      <span className={`text-xs ${textColor}`}>
+                        {displayPct}
                       </span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-200/50">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isTarget
-                            ? isHealthy
-                              ? 'bg-emerald-500'
-                              : 'bg-rose-500'
-                            : 'bg-amber-400'
-                        }`}
-                        style={{ width: `${prob}%` }}
+                        className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                        style={{ width: `${barWidth}%` }}
                       />
                     </div>
                   </div>

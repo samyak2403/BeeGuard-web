@@ -10,10 +10,11 @@ import {
   Menu, 
   LogOut,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Smartphone
 } from 'lucide-react';
 
-export type TabType = 'overview' | 'scans' | 'hives' | 'marketplace' | 'users' | 'outbreaks' | 'settings' | 'profile';
+export type TabType = 'overview' | 'scans' | 'hives' | 'marketplace' | 'users' | 'outbreaks' | 'settings' | 'profile' | 'landing';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -25,6 +26,8 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onSignOut?: () => void;
+  adminName?: string;
+  adminRole?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -36,9 +39,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleMobile,
   isCollapsed = false,
   onToggleCollapse,
-  onSignOut
+  onSignOut,
+  adminName,
+  adminRole
 }) => {
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+
+  const displayName = adminName || 'Samyak Kamble';
+  const displayRole = adminRole || 'Super Administrator';
+  const displayInitials = displayName
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'SK';
 
   const navItems = [
     { id: 'overview' as TabType, label: 'Dashboard', icon: LayoutDashboard },
@@ -65,6 +81,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: activeQuarantinesCount > 0 ? activeQuarantinesCount : undefined,
       badgeColor: 'bg-emerald-100 text-emerald-700'
     },
+    { 
+      id: 'landing' as TabType, 
+      label: 'App Landing Page', 
+      icon: Smartphone,
+      badge: 'APK',
+      badgeColor: 'bg-amber-100 text-amber-800'
+    },
     { id: 'settings' as TabType, label: 'Settings', icon: Settings }
   ];
 
@@ -89,36 +112,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
         isCollapsed ? 'w-20 md:w-20' : 'w-64 md:w-64'
       }`}
     >
-      {/* Brand Header with 3-line Hamburger Menu Button */}
-      <div className={`border-b border-slate-200 transition-all ${isCollapsed ? 'p-3' : 'p-6'}`}>
-        <div className={`flex items-center ${isCollapsed ? 'flex-col gap-3 justify-center' : 'justify-between gap-3'}`}>
+      {/* Brand Header with 3-line Hamburger Menu Button - Aligned to Header h-16 */}
+      <div className={`h-16 border-b border-slate-200 flex items-center shrink-0 transition-all ${isCollapsed ? 'px-2 justify-center' : 'px-4 justify-between'}`}>
+        <div className={`flex items-center ${isCollapsed ? 'flex-col gap-1 justify-center' : 'justify-between w-full gap-2'}`}>
           <div 
             onClick={() => onTabChange('overview')}
-            className="flex items-center gap-3 cursor-pointer group min-w-0"
+            className={`flex items-center gap-2.5 cursor-pointer group min-w-0 ${isCollapsed ? 'justify-center' : ''}`}
             title="BeeGuard Central Intelligence"
           >
             {/* Custom Photographic Apiary Logo */}
-            <div className="relative w-10 h-10 rounded-xl overflow-hidden ring-2 ring-amber-400/90 shadow-md shadow-amber-500/10 shrink-0 group-hover:scale-105 group-hover:ring-amber-500 transition-all duration-200 bg-amber-50">
+            <div className="relative w-9 h-9 rounded-xl overflow-hidden ring-2 ring-amber-400/90 shadow-xs shadow-amber-500/10 shrink-0 group-hover:scale-105 group-hover:ring-amber-500 transition-all duration-200 bg-amber-50">
               <img 
                 src="/login-hero.jpg" 
                 alt="BeeGuard" 
                 className="w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-300"
               />
               <div className="absolute inset-0 bg-gradient-to-tr from-amber-950/20 via-transparent to-amber-400/10 pointer-events-none" />
-              <span className="absolute -bottom-1 -right-1 text-[11px] filter drop-shadow">🐝</span>
+              <span className="absolute -bottom-1 -right-1 text-[10px] filter drop-shadow">🐝</span>
             </div>
 
             {!isCollapsed && (
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h1 className="font-bold text-slate-900 leading-tight tracking-tight text-base truncate">
+                  <h1 className="font-bold text-slate-900 leading-tight tracking-tight text-sm truncate">
                     BeeGuard
                   </h1>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300/60 uppercase tracking-wider">
+                  <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300/60 uppercase tracking-wider">
                     PRO
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 font-medium truncate">Apiary Management</p>
+                <p className="text-[11px] text-slate-500 font-medium truncate">Apiary Management</p>
               </div>
             )}
           </div>
@@ -127,7 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button 
             type="button"
             onClick={handleMenuClick}
-            className={`p-2 hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors shrink-0 text-slate-600 hover:text-slate-900 ${
+            className={`p-1.5 hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors shrink-0 text-slate-600 hover:text-slate-900 cursor-pointer ${
               isCollapsed ? 'mt-1' : ''
             }`}
             title={isCollapsed ? "Expand Sidebar (3-line menu)" : "Collapse Sidebar (3-line menu)"}
@@ -253,28 +276,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* User Profile & Sign Out Footer */}
-      <div className={`border-t border-slate-200 transition-all ${isCollapsed ? 'p-2' : 'p-4'}`}>
+      <div className={`border-t border-slate-200 transition-all ${isCollapsed ? 'p-2' : 'p-3 sm:p-4'}`}>
         <div 
           onClick={() => onTabChange('profile')}
-          className={`flex items-center ${isCollapsed ? 'justify-center p-2' : 'gap-3 p-2 -mx-2'} mb-3 rounded-xl cursor-pointer transition-all ${
+          className={`flex items-center ${isCollapsed ? 'justify-center p-2' : 'gap-3 p-2'} mb-2 rounded-xl cursor-pointer transition-all ${
             activeTab === 'profile' 
               ? 'bg-emerald-50 border border-emerald-200 shadow-xs' 
-              : 'hover:bg-slate-200/60'
+              : 'hover:bg-slate-100'
           }`}
           title="Open Super Administrator Profile & Settings"
         >
           <div className="relative shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center font-semibold text-white shadow-sm">
-              SK
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center font-bold text-white shadow-sm ring-2 ring-amber-400/50">
+              {displayInitials}
             </div>
-            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
           </div>
           {!isCollapsed && (
             <>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">Samyak Kamble</p>
+                <p className="text-sm font-semibold text-slate-900 truncate">{displayName}</p>
                 <p className="text-xs text-slate-500 truncate flex items-center gap-1">
-                  <span>Super Administrator</span>
+                  <span>{displayRole}</span>
                   {activeTab === 'profile' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
                 </p>
               </div>
@@ -284,7 +307,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   e.stopPropagation();
                   onTabChange('profile');
                 }}
-                className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors shrink-0 text-slate-400 hover:text-slate-800"
+                className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors shrink-0 text-slate-400 hover:text-slate-800 cursor-pointer"
                 title="Administrator Profile Settings"
               >
                 <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === 'profile' ? 'text-emerald-600 translate-x-0.5' : ''}`} />
@@ -295,7 +318,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button 
           onClick={onSignOut ? onSignOut : () => alert('Signing out of BeeGuard Admin...')}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'gap-2 px-3'} py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'gap-2 px-3'} py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer`}
           title={isCollapsed ? "Sign Out" : undefined}
         >
           <LogOut className="w-4 h-4 shrink-0" />

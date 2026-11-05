@@ -76,20 +76,20 @@ export const HivesTab: React.FC<HivesTabProps> = ({
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl w-full mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto space-y-6">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Layers className="w-6 h-6 text-emerald-600" />
-            <span>Apiary & Hive Colony Fleet</span>
+            <Layers className="w-6 h-6 text-emerald-600 shrink-0" />
+            <span className="truncate">Apiary & Hive Colony Fleet</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Monitoring {filteredHives.length} colonies across regional apiary zones • Click any card for full colony telemetry
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 shrink-0">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -103,7 +103,7 @@ export const HivesTab: React.FC<HivesTabProps> = ({
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs shadow-sm transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs shadow-sm transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Register Colony</span>
@@ -111,88 +111,100 @@ export const HivesTab: React.FC<HivesTabProps> = ({
         </div>
       </div>
 
-      {/* Hives Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredHives.map((hive) => {
-          const isHealthy = hive.healthStatus === 'HEALTHY';
-          const isWarning = hive.healthStatus === 'WARNING';
+      {/* Hives Grid or Empty State */}
+      {filteredHives.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <Layers className="w-6 h-6" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-800">No colonies found matching filter</h3>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            Switch filter to "All Health Conditions" or register a new colony using the button above.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {filteredHives.map((hive) => {
+            const isHealthy = hive.healthStatus === 'HEALTHY';
+            const isWarning = hive.healthStatus === 'WARNING';
 
-          return (
-            <div
-              key={hive.id}
-              onClick={() => setSelectedHiveId(hive.id)}
-              className="p-6 rounded-xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-md cursor-pointer transition-all flex flex-col justify-between group"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors flex items-center justify-between">
-                      <span className="truncate">{hive.name}</span>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
-                    </h3>
-                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{hive.apiaryLocation}</span>
-                    </p>
+            return (
+              <div
+                key={hive.id}
+                onClick={() => setSelectedHiveId(hive.id)}
+                className="p-5 sm:p-6 rounded-xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-md cursor-pointer transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors flex items-center justify-between gap-2">
+                        <span className="truncate">{hive.name}</span>
+                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" />
+                      </h3>
+                      <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5 min-w-0">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{hive.apiaryLocation}</span>
+                      </p>
+                    </div>
+
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap inline-block shrink-0 ${
+                      isHealthy
+                        ? 'bg-green-100 text-green-700'
+                        : isWarning
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {hive.healthStatus}
+                    </span>
                   </div>
 
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap inline-block shrink-0 ${
-                    isHealthy
-                      ? 'bg-green-100 text-green-700'
-                      : isWarning
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {hive.healthStatus}
-                  </span>
+                  {hive.primaryDiagnosis && (
+                    <div className="my-3 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 text-xs">
+                      <span className="text-slate-500">Diagnosis: </span>
+                      <strong className="text-slate-800">{hive.primaryDiagnosis}</strong>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 text-center my-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Queen</p>
+                      <p className={`text-xs font-bold mt-1 ${hive.queenStatus === 'ACTIVE' ? 'text-green-600' : 'text-amber-600'}`}>
+                        {hive.queenStatus}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Frames</p>
+                      <p className="text-xs font-bold text-slate-800 mt-1">{hive.frameCount} Deep</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Yield</p>
+                      <p className="text-xs font-bold text-slate-800 mt-1">{hive.honeyYieldKg} kg</p>
+                    </div>
+                  </div>
                 </div>
 
-                {hive.primaryDiagnosis && (
-                  <div className="my-3 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 text-xs">
-                    <span className="text-slate-500">Diagnosis: </span>
-                    <strong className="text-slate-800">{hive.primaryDiagnosis}</strong>
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                    <span className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
+                      <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{hive.beekeeperName}</span>
+                    </span>
+                    <span className="text-[11px] text-slate-400 shrink-0">
+                      {hive.lastInspectionDate}
+                    </span>
                   </div>
-                )}
 
-                <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 text-center my-3">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Queen</p>
-                    <p className={`text-xs font-bold mt-1 ${hive.queenStatus === 'ACTIVE' ? 'text-green-600' : 'text-amber-600'}`}>
-                      {hive.queenStatus}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Frames</p>
-                    <p className="text-xs font-bold text-slate-800 mt-1">{hive.frameCount} Deep</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Yield</p>
-                    <p className="text-xs font-bold text-slate-800 mt-1">{hive.honeyYieldKg} kg</p>
+                  {/* Open Colony Profile Pill */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-emerald-600 group-hover:text-emerald-700">
+                    <span className="truncate">Open Colony Profile & Telemetry</span>
+                    <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform shrink-0" />
                   </div>
                 </div>
               </div>
-
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span className="flex items-center gap-1 truncate">
-                    <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{hive.beekeeperName}</span>
-                  </span>
-                  <span className="text-[11px] text-slate-400 shrink-0">
-                    {hive.lastInspectionDate}
-                  </span>
-                </div>
-
-                {/* Open Colony Profile Pill */}
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-emerald-600 group-hover:text-emerald-700">
-                  <span>Open Colony Profile & Telemetry</span>
-                  <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal */}
       {showAddModal && (

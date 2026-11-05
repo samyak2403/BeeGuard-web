@@ -1,27 +1,18 @@
-# Dependencies
-node_modules
-/.pnp
-.pnp.js
+# Node modules & dependencies
+node_modules/
 
-# Production
-dist
-dist-ssr
+# Production build output
+dist/
+dist-ssr/
 
-# Environment
+# Environment variables & secret keys (MUST NOT BE COMMITTED)
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# Editor configs & log files
+.vscode/
+.idea/
+*.log
+*.tsbuildinfo
 
-# Editor & OS files
-.vscode
-.idea
-.DS_Store
-Thumbs.db

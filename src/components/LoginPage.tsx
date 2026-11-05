@@ -8,7 +8,8 @@ import {
   CheckCircle2,
   User,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  Smartphone
 } from 'lucide-react';
 import { 
   verifyAdminLogin, 
@@ -247,7 +248,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   required
                   value={securityKey}
                   onChange={(e) => setSecurityKey(e.target.value.toUpperCase())}
-                  placeholder="K8M2X9P4Q7LA"
+                  placeholder="Enter 12-character security key"
                   className="w-full px-4 py-3 pr-10 rounded-lg border border-amber-300/80 bg-amber-50/40 text-slate-900 font-mono text-sm tracking-wider font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-slate-400 shadow-xs"
                 />
                 <button
@@ -287,6 +288,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           <p className="text-center text-[11px] text-slate-400 pt-2 border-t border-slate-100">
             Protected Biosecurity Console • Firebase 2FA Hardware Protocol
           </p>
+
+          {/* Direct Link to Mobile App Landing Page & APK */}
+          <div className="pt-2 text-center">
+            <a
+              href="?view=landing"
+              className="inline-flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 font-semibold transition-colors cursor-pointer"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Looking for the mobile app? Download Android APK →</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>

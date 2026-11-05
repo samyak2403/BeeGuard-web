@@ -11,6 +11,9 @@ export interface UserAccount {
   registeredAt: string;
   hivesCount: number;
   status: 'active' | 'verified' | 'suspended';
+  isSuspended?: boolean;
+  suspendedReason?: string;
+  suspendedAt?: string;
 }
 
 export type HealthStatus = 'HEALTHY' | 'INFECTED' | 'WARNING';
