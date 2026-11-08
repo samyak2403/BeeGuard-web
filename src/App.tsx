@@ -36,6 +36,9 @@ import {
   broadcastOutbreakNotification,
   moderateProduct,
   deleteProduct,
+  deleteUserAccount,
+  deleteScanRecord,
+  deleteOutbreakAlert,
   toggleUserSuspension,
   updateUserRole
 } from './services/firebase';
@@ -226,6 +229,36 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    setUsers(prev => prev.filter(u => u.id !== userId));
+    try {
+      await deleteUserAccount(userId);
+      showToast('warning', 'User Account Deleted', 'User permanently removed from Firestore.');
+    } catch {
+      showToast('info', 'User Removed Locally', 'User removed from view.');
+    }
+  };
+
+  const handleDeleteScan = async (scanId: string) => {
+    setScans(prev => prev.filter(s => s.id !== scanId));
+    try {
+      await deleteScanRecord(scanId);
+      showToast('warning', 'Scan Record Deleted', 'Disease detection record deleted from Firestore.');
+    } catch {
+      showToast('info', 'Scan Removed Locally', 'Scan removed from view.');
+    }
+  };
+
+  const handleDeleteOutbreak = async (outbreakId: string) => {
+    setOutbreaks(prev => prev.filter(o => o.id !== outbreakId));
+    try {
+      await deleteOutbreakAlert(outbreakId);
+      showToast('warning', 'Outbreak Alert Deleted', 'Alert permanently deleted from notifications.');
+    } catch {
+      showToast('info', 'Outbreak Removed Locally', 'Outbreak removed from view.');
+    }
+  };
+
   const handleToggleUserStatus = async (userId: string, reason?: string) => {
     const user = users.find(u => u.id === userId);
     const nextStatus = user?.status === 'suspended' ? 'verified' : 'suspended';
@@ -397,6 +430,7 @@ export const App: React.FC = () => {
               onNavigateToScans={() => setActiveTab('scans')}
               onNavigateToOutbreaks={() => setActiveTab('outbreaks')}
               onUpdateScanStatus={handleUpdateScanStatus}
+              onDeleteScan={handleDeleteScan}
               onTriggerOutbreakBroadcast={() => setIsAlertModalOpen(true)}
               onShowToast={showToast}
               adminName={adminProfile.fullName}
@@ -407,6 +441,7 @@ export const App: React.FC = () => {
             <ScansTab 
               scans={filteredScans}
               onUpdateScanStatus={handleUpdateScanStatus}
+              onDeleteScan={handleDeleteScan}
               onTriggerOutbreakBroadcast={() => setIsAlertModalOpen(true)}
               onShowToast={showToast}
             />
@@ -439,6 +474,7 @@ export const App: React.FC = () => {
               marketplace={marketplace}
               onToggleUserStatus={handleToggleUserStatus}
               onUpdateRole={handleUpdateUserRole}
+              onDeleteUser={handleDeleteUser}
               onUpdateScanStatus={handleUpdateScanStatus}
               onTriggerOutbreakBroadcast={() => setIsAlertModalOpen(true)}
               onShowToast={showToast}
@@ -452,6 +488,7 @@ export const App: React.FC = () => {
               scans={scans}
               onTriggerBroadcast={() => setIsAlertModalOpen(true)}
               onUpdateOutbreakStatus={handleUpdateOutbreakStatus}
+              onDeleteOutbreak={handleDeleteOutbreak}
               onShowToast={showToast}
             />
           )}

@@ -14,7 +14,8 @@ import {
   ChevronRight, 
   Bell, 
   FileText, 
-  Lock
+  Lock,
+  Trash2
 } from 'lucide-react';
 import { OutbreakAlert, HiveRecord, DiseaseScanRecord } from '../types';
 import { ScanDetailView } from './ScanDetailView';
@@ -25,6 +26,7 @@ interface OutbreakDetailViewProps {
   scans?: DiseaseScanRecord[];
   onBack: () => void;
   onUpdateStatus: (id: string, newStatus: 'ACTIVE_QUARANTINE' | 'CONTAINED' | 'INVESTIGATING') => void;
+  onDeleteOutbreak?: (id: string) => void;
   onTriggerBroadcast?: () => void;
   onShowToast?: (type: 'success' | 'warning' | 'info', title: string, desc?: string) => void;
 }
@@ -35,6 +37,7 @@ export const OutbreakDetailView: React.FC<OutbreakDetailViewProps> = ({
   scans = [],
   onBack,
   onUpdateStatus,
+  onDeleteOutbreak,
   onTriggerBroadcast,
   onShowToast
 }) => {
@@ -167,6 +170,22 @@ export const OutbreakDetailView: React.FC<OutbreakDetailViewProps> = ({
               Contained
             </button>
           </div>
+
+          {onDeleteOutbreak && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Permanently delete outbreak notification "${outbreak.disease}" in ${outbreak.region}? This action cannot be undone.`)) {
+                  onDeleteOutbreak(outbreak.id);
+                  onBack();
+                }
+              }}
+              title="Delete Outbreak"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Alert</span>
+            </button>
+          )}
         </div>
       </div>
 

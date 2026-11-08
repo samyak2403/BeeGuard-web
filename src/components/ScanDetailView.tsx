@@ -17,7 +17,8 @@ import {
   FileText,
   Activity,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Trash2
 } from 'lucide-react';
 import { DiseaseScanRecord } from '../types';
 
@@ -25,6 +26,7 @@ interface ScanDetailViewProps {
   scan: DiseaseScanRecord;
   onBack: () => void;
   onUpdateStatus: (scanId: string, newStatus: 'CONFIRMED' | 'QUARANTINED' | 'RESOLVED') => void;
+  onDeleteScan?: (scanId: string) => void;
   onTriggerOutbreakBroadcast?: (diseaseName: string, region: string) => void;
   onShowToast?: (type: 'success' | 'warning' | 'info', title: string, desc?: string) => void;
 }
@@ -239,6 +241,7 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
   scan,
   onBack,
   onUpdateStatus,
+  onDeleteScan,
   onTriggerOutbreakBroadcast,
   onShowToast
 }) => {
@@ -440,6 +443,22 @@ export const ScanDetailView: React.FC<ScanDetailViewProps> = ({
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               <span>Flag for Biosecurity Quarantine</span>
+            </button>
+          )}
+
+          {onDeleteScan && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Permanently delete scan dossier for "${scan.diseaseName}" (${scan.apiaryLocation})? This action cannot be undone.`)) {
+                  onDeleteScan(scan.id);
+                  onBack();
+                }
+              }}
+              title="Delete Scan Record"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Scan</span>
             </button>
           )}
         </div>

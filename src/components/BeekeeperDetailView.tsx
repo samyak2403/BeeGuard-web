@@ -21,7 +21,8 @@ import {
   AlertCircle,
   ZoomIn,
   ArrowRight,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { 
   UserAccount, 
@@ -41,6 +42,7 @@ interface BeekeeperDetailViewProps {
   onBack: () => void;
   onToggleUserStatus: (userId: string, reason?: string) => void;
   onUpdateRole: (userId: string, newRole: UserRole) => void;
+  onDeleteUser?: (userId: string) => void;
   onUpdateScanStatus?: (scanId: string, newStatus: 'CONFIRMED' | 'QUARANTINED' | 'RESOLVED') => void;
   onTriggerOutbreakBroadcast?: (diseaseName: string, region: string) => void;
   onShowToast?: (type: 'success' | 'warning' | 'info', title: string, desc?: string) => void;
@@ -54,6 +56,7 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
   onBack,
   onToggleUserStatus,
   onUpdateRole,
+  onDeleteUser,
   onUpdateScanStatus,
   onTriggerOutbreakBroadcast,
   onShowToast
@@ -215,6 +218,21 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
             <UserX className="w-3.5 h-3.5" />
             <span>{isSuspended ? 'Reactivate Account' : 'Suspend Account'}</span>
           </button>
+
+          {onDeleteUser && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Are you sure you want to permanently delete user "${user.fullName}" (${user.email})? This action cannot be undone.`)) {
+                  onDeleteUser(user.id);
+                  onBack();
+                }
+              }}
+              className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete User</span>
+            </button>
+          )}
         </div>
       </div>
 

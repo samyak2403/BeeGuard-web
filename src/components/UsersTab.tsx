@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Mail, Phone, MapPin, Award, UserCheck, UserX, ArrowRight, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Users, Mail, Phone, MapPin, Award, UserCheck, UserX, ArrowRight, ChevronRight, AlertTriangle, Trash2 } from 'lucide-react';
 import { UserAccount, UserRole, HiveRecord, DiseaseScanRecord, MarketplaceItem } from '../types';
 import { BeekeeperDetailView } from './BeekeeperDetailView';
 import { SuspendUserModal } from './SuspendUserModal';
@@ -11,6 +11,7 @@ interface UsersTabProps {
   marketplace?: MarketplaceItem[];
   onToggleUserStatus: (userId: string, reason?: string) => void;
   onUpdateRole: (userId: string, newRole: UserRole) => void;
+  onDeleteUser?: (userId: string) => void;
   onUpdateScanStatus?: (scanId: string, newStatus: 'CONFIRMED' | 'QUARANTINED' | 'RESOLVED') => void;
   onTriggerOutbreakBroadcast?: (diseaseName: string, region: string) => void;
   onShowToast?: (type: 'success' | 'warning' | 'info', title: string, desc?: string) => void;
@@ -23,6 +24,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   marketplace = [],
   onToggleUserStatus,
   onUpdateRole,
+  onDeleteUser,
   onUpdateScanStatus,
   onTriggerOutbreakBroadcast,
   onShowToast
@@ -44,6 +46,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
         onBack={() => setSelectedUserId(null)}
         onToggleUserStatus={onToggleUserStatus}
         onUpdateRole={onUpdateRole}
+        onDeleteUser={onDeleteUser}
         onUpdateScanStatus={onUpdateScanStatus}
         onTriggerOutbreakBroadcast={onTriggerOutbreakBroadcast}
         onShowToast={onShowToast}
@@ -249,6 +252,22 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                         <UserX className="w-3 h-3" />
                         <span>{isSuspended ? 'Reactivate' : 'Suspend'}</span>
                       </button>
+
+                      {onDeleteUser && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Permanently delete user "${user.fullName}" (${user.email})? This action cannot be undone.`)) {
+                              onDeleteUser(user.id);
+                            }
+                          }}
+                          title="Delete User"
+                          className="px-2 py-1 rounded-md text-[11px] font-semibold border bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-700 border-slate-200 hover:border-red-200 inline-flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 

@@ -10,7 +10,8 @@ import {
   ShieldCheck, 
   ShieldAlert,
   ArrowRight,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { DiseaseScanRecord } from '../types';
 import { ScanDetailView } from './ScanDetailView';
@@ -18,6 +19,7 @@ import { ScanDetailView } from './ScanDetailView';
 interface ScansTabProps {
   scans: DiseaseScanRecord[];
   onUpdateScanStatus: (scanId: string, newStatus: 'CONFIRMED' | 'QUARANTINED' | 'RESOLVED') => void;
+  onDeleteScan?: (scanId: string) => void;
   onTriggerOutbreakBroadcast?: (diseaseName: string, region: string) => void;
   onShowToast?: (type: 'success' | 'warning' | 'info', title: string, desc?: string) => void;
 }
@@ -25,6 +27,7 @@ interface ScansTabProps {
 export const ScansTab: React.FC<ScansTabProps> = ({ 
   scans, 
   onUpdateScanStatus,
+  onDeleteScan,
   onTriggerOutbreakBroadcast,
   onShowToast
 }) => {
@@ -41,6 +44,7 @@ export const ScansTab: React.FC<ScansTabProps> = ({
         scan={selectedScan}
         onBack={() => setSelectedScanId(null)}
         onUpdateStatus={onUpdateScanStatus}
+        onDeleteScan={onDeleteScan}
         onTriggerOutbreakBroadcast={onTriggerOutbreakBroadcast}
         onShowToast={onShowToast}
       />
@@ -238,6 +242,21 @@ export const ScansTab: React.FC<ScansTabProps> = ({
                       >
                         <ShieldAlert className="w-3.5 h-3.5" />
                         <span>Quarantine</span>
+                      </button>
+                    )}
+
+                    {onDeleteScan && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Permanently delete scan record for "${scan.diseaseName}" (${scan.apiaryLocation})?`)) {
+                            onDeleteScan(scan.id);
+                          }
+                        }}
+                        title="Delete Scan"
+                        className="p-2 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-700 border border-slate-200 hover:border-red-200 transition-colors shrink-0 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>

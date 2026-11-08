@@ -368,6 +368,30 @@ export const deleteProduct = async (productId: string) => {
 };
 
 /**
+ * Permanently delete beekeeper user account from Firestore
+ */
+export const deleteUserAccount = async (userId: string) => {
+  const ref = doc(db, COLLECTIONS.USERS, userId);
+  await deleteDoc(ref);
+};
+
+/**
+ * Permanently delete AI disease detection record from Firestore
+ */
+export const deleteScanRecord = async (scanId: string) => {
+  const ref = doc(db, COLLECTIONS.DETECTIONS, scanId);
+  await deleteDoc(ref);
+};
+
+/**
+ * Permanently delete outbreak alert notification from Firestore
+ */
+export const deleteOutbreakAlert = async (alertId: string) => {
+  const ref = doc(db, COLLECTIONS.NOTIFICATIONS, alertId);
+  await deleteDoc(ref);
+};
+
+/**
  * Toggle beekeeper suspension in Firestore with optional reason
  */
 export const toggleUserSuspension = async (userId: string, isSuspended: boolean, reason?: string) => {

@@ -14,6 +14,7 @@ interface OverviewTabProps {
   onNavigateToScans: () => void;
   onNavigateToOutbreaks: () => void;
   onUpdateScanStatus?: (scanId: string, newStatus: 'CONFIRMED' | 'QUARANTINED' | 'RESOLVED') => void;
+  onDeleteScan?: (scanId: string) => void;
   onTriggerOutbreakBroadcast?: (diseaseName: string, region: string) => void;
   onShowToast?: (type: 'success' | 'warning' | 'info', title: string, desc?: string) => void;
   adminName?: string;
@@ -26,6 +27,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onNavigateToScans,
   onNavigateToOutbreaks,
   onUpdateScanStatus,
+  onDeleteScan,
   onTriggerOutbreakBroadcast,
   onShowToast,
   adminName
@@ -42,6 +44,12 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           if (onUpdateScanStatus) {
             onUpdateScanStatus(scanId, newStatus);
           }
+        }}
+        onDeleteScan={(scanId) => {
+          if (onDeleteScan) {
+            onDeleteScan(scanId);
+          }
+          setSelectedScan(null);
         }}
         onTriggerOutbreakBroadcast={onTriggerOutbreakBroadcast}
         onShowToast={onShowToast}

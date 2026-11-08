@@ -183,11 +183,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
           {/* Login Form */}
           <form onSubmit={handleLoginSubmit} className="space-y-4">
-            {/* Field 1: Usuario / Email matching reference */}
+            {/* Field 1: Email Address */}
             <div className="space-y-1.5">
               <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
                 <User className="w-3.5 h-3.5 text-slate-500" />
-                <span>Usuario / Email</span>
+                <span>Email Address</span>
               </label>
               <div className="relative">
                 <input
@@ -202,12 +202,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               </div>
             </div>
 
-            {/* Field 2: Contraseña / Password matching reference */}
+            {/* Field 2: Password */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
                   <Lock className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Contraseña / Password</span>
+                  <span>Password</span>
                 </label>
               </div>
               <div className="relative">
@@ -262,12 +262,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               </div>
             </div>
 
-            {/* Iniciar sesión / Sign In Pill Button matching reference */}
+            {/* Sign In Pill Button */}
             <div className="pt-2">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 px-6 rounded-full bg-slate-500 hover:bg-slate-600 active:scale-[0.99] text-white font-medium text-sm transition-all shadow-sm hover:shadow disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 px-6 rounded-full bg-slate-800 hover:bg-slate-900 active:scale-[0.99] text-white font-medium text-sm transition-all shadow-sm hover:shadow disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isLoading ? (
                   <>
@@ -276,7 +276,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   </>
                 ) : (
                   <>
-                    <span>Iniciar sesión</span>
+                    <span>Sign In</span>
                     <ArrowRight className="w-4 h-4 text-white/80" />
                   </>
                 )}

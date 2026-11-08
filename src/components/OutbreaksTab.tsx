@@ -8,7 +8,8 @@ import {
   Layers, 
   ShieldCheck, 
   ArrowRight, 
-  ChevronRight 
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { OutbreakAlert, HiveRecord, DiseaseScanRecord } from '../types';
 import { OutbreakDetailView } from './OutbreakDetailView';
@@ -19,6 +20,7 @@ interface OutbreaksTabProps {
   scans?: DiseaseScanRecord[];
   onTriggerBroadcast: () => void;
   onUpdateOutbreakStatus: (id: string, newStatus: 'ACTIVE_QUARANTINE' | 'CONTAINED' | 'INVESTIGATING') => void;
+  onDeleteOutbreak?: (id: string) => void;
   onShowToast?: (type: 'success' | 'warning' | 'info', title: string, desc?: string) => void;
 }
 
@@ -28,6 +30,7 @@ export const OutbreaksTab: React.FC<OutbreaksTabProps> = ({
   scans = [],
   onTriggerBroadcast,
   onUpdateOutbreakStatus,
+  onDeleteOutbreak,
   onShowToast
 }) => {
   const [selectedOutbreakId, setSelectedOutbreakId] = useState<string | null>(null);
@@ -43,6 +46,7 @@ export const OutbreaksTab: React.FC<OutbreaksTabProps> = ({
         scans={scans}
         onBack={() => setSelectedOutbreakId(null)}
         onUpdateStatus={onUpdateOutbreakStatus}
+        onDeleteOutbreak={onDeleteOutbreak}
         onTriggerBroadcast={onTriggerBroadcast}
         onShowToast={onShowToast}
       />
@@ -161,6 +165,21 @@ export const OutbreaksTab: React.FC<OutbreaksTabProps> = ({
                       >
                         <ShieldCheck className="w-3.5 h-3.5" />
                         <span>Mark Contained</span>
+                      </button>
+                    )}
+
+                    {onDeleteOutbreak && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Permanently delete outbreak notification "${outbreak.disease}" in ${outbreak.region}?`)) {
+                            onDeleteOutbreak(outbreak.id);
+                          }
+                        }}
+                        title="Delete Outbreak"
+                        className="p-2 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-700 border border-slate-200 hover:border-red-200 transition-colors shrink-0 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
