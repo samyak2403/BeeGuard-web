@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Download, 
   ExternalLink, 
@@ -8,7 +8,8 @@ import {
   Eye,
   Edit3,
   Save,
-  RotateCcw
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
 import { HeroSection } from './HeroSection';
 import { FeaturesSection } from './FeaturesSection';
@@ -22,6 +23,11 @@ import {
   saveLandingConfig, 
   resetLandingConfig 
 } from './types';
+import { 
+  subscribeToLandingConfig, 
+  saveLandingConfigToFirestore, 
+  resetLandingConfigInFirestore 
+} from '../services/firebase';
 import { GithubIcon } from './GithubIcon';
 
 interface AppLandingPageProps {
@@ -36,6 +42,18 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(standalone);
   const [config, setConfig] = useState<LandingPageConfig>(loadLandingConfig);
   const [adminTab, setAdminTab] = useState<'preview' | 'edit'>('preview');
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+
+  // Subscribe to real-time Firebase Firestore updates for landing page & APK release specs
+  useEffect(() => {
+    const unsubscribe = subscribeToLandingConfig((liveConfig) => {
+      setConfig(liveConfig);
+      saveLandingConfig(liveConfig); // keep offline cache synced
+      setLastSyncTime(new Date());
+    });
+    return () => unsubscribe();
+  }, []);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -44,16 +62,42 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
     }
   };
 
-  const handleSave = () => {
-    saveLandingConfig(config);
-    onShowToast?.('success', 'Landing Page Saved', 'Custom configuration is now active.');
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      saveLandingConfig(config); // instant local cache
+      const result = await saveLandingConfigToFirestore(config);
+      if (result.success) {
+        setLastSyncTime(new Date());
+        onShowToast?.(
+          'success', 
+          'Published to Firestore Live', 
+          `BeeGuard ${config.release.version} APK & landing page specs updated in real-time across all devices.`
+        );
+      } else {
+        onShowToast?.('warning', 'Local Cache Only', result.error || 'Failed to sync to Firestore.');
+      }
+    } catch (err: any) {
+      onShowToast?.('warning', 'Save Failed', err?.message || 'Error communicating with Firestore.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleReset = () => {
-    if (window.confirm('Reset all landing page customizations back to original defaults?')) {
-      const def = resetLandingConfig();
-      setConfig(def);
-      onShowToast?.('info', 'Configuration Reset', 'Restored original default settings.');
+  const handleReset = async () => {
+    if (window.confirm('Reset all landing page & APK release configurations back to official production defaults in Firestore?')) {
+      setIsSaving(true);
+      try {
+        await resetLandingConfigInFirestore();
+        const def = resetLandingConfig();
+        setConfig(def);
+        setLastSyncTime(new Date());
+        onShowToast?.('info', 'Configuration Reset', 'Restored official production defaults in Firestore.');
+      } catch (err: any) {
+        onShowToast?.('warning', 'Reset Failed', err?.message || 'Failed to reset Firestore.');
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -76,9 +120,13 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                   <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30">
                     {config.release.version}
                   </span>
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Firestore Live
+                  </span>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  Switch between live preview and admin content customizer
+                  Real-time synchronization with Firebase Firestore & mobile app
                 </p>
               </div>
             </div>
@@ -117,18 +165,20 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
               <button
                 type="button"
                 onClick={handleSave}
-                className="h-8 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold border border-transparent inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs whitespace-nowrap"
-                title="Save customizations"
+                disabled={isSaving}
+                className="h-8 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold border border-transparent inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs whitespace-nowrap"
+                title="Save customizations to Firestore"
               >
-                <Save className="w-3.5 h-3.5" />
-                <span>Save</span>
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                <span>{isSaving ? 'Saving...' : 'Save to Firestore'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleReset}
+                disabled={isSaving}
                 className="h-8 px-3 rounded-xl border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-medium inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
-                title="Reset to defaults"
+                title="Reset to production defaults in Firestore"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span className="hidden md:inline">Reset</span>
@@ -157,6 +207,8 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
           onSave={handleSave}
           onReset={handleReset}
           onSwitchToPreview={() => setAdminTab('preview')}
+          isSaving={isSaving}
+          lastSyncTime={lastSyncTime}
         />
       ) : (
         /* RENDER TAB: LIVE PREVIEW */

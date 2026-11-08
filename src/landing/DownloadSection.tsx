@@ -30,9 +30,17 @@ export const DownloadSection: React.FC<DownloadSectionProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedHash, setCopiedHash] = useState(false);
 
+  const isExternalDownload = releaseInfo.directDownloadUrl?.startsWith('http://') || releaseInfo.directDownloadUrl?.startsWith('https://');
+
   const getFullDownloadUrl = () => {
     if (typeof window === 'undefined') return releaseInfo.directDownloadUrl;
-    return `${window.location.origin}${releaseInfo.directDownloadUrl}`;
+    if (isExternalDownload) {
+      return releaseInfo.directDownloadUrl;
+    }
+    const cleanPath = releaseInfo.directDownloadUrl?.startsWith('/') 
+      ? releaseInfo.directDownloadUrl 
+      : `/${releaseInfo.directDownloadUrl || ''}`;
+    return `${window.location.origin}${cleanPath}`;
   };
 
   const handleCopyLink = () => {
@@ -106,7 +114,9 @@ export const DownloadSection: React.FC<DownloadSectionProps> = ({
               <div className="space-y-3">
                 <a
                   href={releaseInfo.directDownloadUrl}
-                  download="beeguard-v1.0.0.apk"
+                  download={isExternalDownload ? undefined : (releaseInfo.directDownloadUrl?.split('/').pop() || `beeguard-${releaseInfo.version || 'release'}.apk`)}
+                  target={isExternalDownload ? "_blank" : undefined}
+                  rel={isExternalDownload ? "noopener noreferrer" : undefined}
                   className="w-full py-4 px-6 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-base shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/35 flex items-center justify-between transition-all transform hover:-translate-y-0.5 cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">

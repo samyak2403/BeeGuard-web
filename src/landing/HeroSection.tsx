@@ -97,15 +97,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             {/* Action Buttons: Direct APK & GitHub Releases */}
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center lg:justify-start gap-3 pt-2">
-              <a
-                href={releaseInfo.directDownloadUrl}
-                download="beeguard-v1.0.0.apk"
+              <button
+                type="button"
                 onClick={onScrollToDownload}
                 className="h-12 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm border border-transparent shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30 inline-flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Download className="w-4 h-4 shrink-0" />
                 <span>{heroConfig.downloadButtonText} ({releaseInfo.fileSize})</span>
-              </a>
+              </button>
 
               <a
                 href={releaseInfo.githubReleasesUrl}

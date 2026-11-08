@@ -12,16 +12,23 @@ import {
   Check, 
   Upload, 
   FileDown,
-  Info
+  Info,
+  ShieldCheck,
+  FileCode,
+  Loader2,
+  CheckCircle2,
+  Zap
 } from 'lucide-react';
 import { LandingPageConfig } from './types';
 
 interface LandingPageEditorProps {
   config: LandingPageConfig;
   onUpdate: (newConfig: LandingPageConfig) => void;
-  onSave: () => void;
-  onReset: () => void;
+  onSave: () => void | Promise<void>;
+  onReset: () => void | Promise<void>;
   onSwitchToPreview: () => void;
+  isSaving?: boolean;
+  lastSyncTime?: Date | null;
 }
 
 type EditorSection = 'release' | 'hero' | 'features' | 'screens' | 'download' | 'general';
@@ -31,15 +38,83 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   onUpdate,
   onSave,
   onReset,
-  onSwitchToPreview
+  onSwitchToPreview,
+  isSaving = false,
+  lastSyncTime = null
 }) => {
   const [activeSection, setActiveSection] = useState<EditorSection>('release');
   const [showSavedFeedback, setShowSavedFeedback] = useState(false);
+  const [isCalculatingHash, setIsCalculatingHash] = useState(false);
+  const [apkInspectSuccess, setApkInspectSuccess] = useState<string | null>(null);
 
-  const handleSaveClick = () => {
-    onSave();
-    setShowSavedFeedback(true);
-    setTimeout(() => setShowSavedFeedback(false), 3000);
+  const handleSaveClick = async () => {
+    try {
+      await onSave();
+      setShowSavedFeedback(true);
+      setTimeout(() => setShowSavedFeedback(false), 3500);
+    } catch (e) {
+      console.error('Save failed:', e);
+    }
+  };
+
+  const handleApkFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.apk')) {
+      alert('Please select a valid Android package file (.apk)');
+      return;
+    }
+
+    setIsCalculatingHash(true);
+    setApkInspectSuccess(null);
+
+    try {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+      const arrayBuffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+      onUpdate({
+        ...config,
+        release: {
+          ...config.release,
+          fileSize: sizeMB,
+          sha256: hashHex,
+          directDownloadUrl: `/downloads/${file.name}`
+        }
+      });
+
+      setApkInspectSuccess(`Parsed "${file.name}" (${sizeMB}) with real SHA-256! Click "Save All Changes" to publish live to Firestore.`);
+    } catch (err: any) {
+      console.error('Failed to parse APK file:', err);
+      alert('Error calculating APK checksum: ' + err?.message);
+    } finally {
+      setIsCalculatingHash(false);
+    }
+  };
+
+  const handleFillProductionDefaults = () => {
+    onUpdate({
+      ...config,
+      release: {
+        ...config.release,
+        version: 'v1.0.0',
+        buildNumber: 1,
+        releaseDate: 'November 2026',
+        fileSize: '37.8 MB',
+        minAndroidVersion: 'Android 7.0 (Nougat, API 24)',
+        targetAndroidVersion: 'Android 15+ (Vanilla Ice Cream, API 36)',
+        architecture: 'arm64-v8a, armeabi-v7a, x86_64 (Universal)',
+        sha256: '08DB65E217E26E550DADE5D68BB2613935FB646AE7ED1654898B8D5EB289921B',
+        directDownloadUrl: '/downloads/beeguard-release.apk',
+        githubRepoUrl: 'https://github.com/samyak2403/BeeGuard',
+        githubReleasesUrl: 'https://github.com/samyak2403/BeeGuard/releases',
+        githubDirectDownloadUrl: 'https://github.com/samyak2403/BeeGuard/releases/download/v1.0.0/app-release.apk'
+      }
+    });
+    setApkInspectSuccess('Filled actual BeeGuard production release info! Click "Save" to publish live.');
   };
 
   const handleExportJson = () => {
@@ -221,22 +296,125 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       {/* SECTION 1: Release & APK Specs */}
       {activeSection === 'release' && (
         <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-6">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <Package className="w-5 h-5 text-amber-600" />
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
-                Application Release & APK Download Information
-              </h3>
-              <p className="text-xs text-slate-500">
-                Configure release versioning, APK file sizes, target SDKs, and binary links.
-              </p>
+          
+          {/* Header & Live Sync Status */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                <Package className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Application Release & APK Download Information
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Configure live production APK release versioning, file sizes, target SDKs, and binary endpoints.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Firestore Real-Time Sync</span>
+              </span>
+              {lastSyncTime && (
+                <span className="text-[11px] text-slate-400 font-mono hidden md:inline">
+                  Synced: {lastSyncTime.toLocaleTimeString()}
+                </span>
+              )}
             </div>
           </div>
 
+          {/* Quick APK Inspection & Preset Actions */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-600 shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-slate-900">Quick Tools & Automated Inspection</p>
+                <p className="text-[11px] text-slate-500">Pick an APK file to auto-calculate exact size & SHA-256 hash or load BeeGuard defaults.</p>
+              </div>
+            </div>
+
+            <div className="flex items-center flex-wrap gap-2">
+              <label className="h-8 px-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                {isCalculatingHash ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                    <span>Analyzing APK...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileCode className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Inspect Local .APK</span>
+                  </>
+                )}
+                <input 
+                  type="file" 
+                  accept=".apk" 
+                  onChange={handleApkFileSelect} 
+                  disabled={isCalculatingHash}
+                  className="hidden" 
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={handleFillProductionDefaults}
+                className="h-8 px-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <span>Load App v1.0.0 Defaults</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveClick}
+                disabled={isSaving}
+                className="h-8 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold shadow-xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                    <span>Saving...</span>
+                  </>
+                ) : showSavedFeedback ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                    <span>Saved Live!</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5 text-white" />
+                    <span>Publish Live</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Inspection Alert Feedback */}
+          {apkInspectSuccess && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{apkInspectSuccess}</span>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setApkInspectSuccess(null)}
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-900 cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Form Fields Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Version Tag
+                Version Tag (e.g. v1.0.0)
               </label>
               <input
                 type="text"
@@ -252,7 +430,7 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Build Number
+                Version Code / Build Number
               </label>
               <input
                 type="number"
@@ -262,7 +440,7 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   release: { ...config.release, buildNumber: parseInt(e.target.value) || 1 }
                 })}
                 placeholder="1"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
               />
             </div>
 
@@ -293,14 +471,14 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   ...config,
                   release: { ...config.release, fileSize: e.target.value }
                 })}
-                placeholder="45.8 MB"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                placeholder="37.8 MB"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Minimum Android OS
+                Minimum Android OS (minSdk)
               </label>
               <input
                 type="text"
@@ -309,14 +487,14 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   ...config,
                   release: { ...config.release, minAndroidVersion: e.target.value }
                 })}
-                placeholder="Android 8.0 (API 26)"
+                placeholder="Android 7.0 (Nougat, API 24)"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Target Android OS
+                Target Android OS (targetSdk)
               </label>
               <input
                 type="text"
@@ -325,7 +503,7 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   ...config,
                   release: { ...config.release, targetAndroidVersion: e.target.value }
                 })}
-                placeholder="Android 14+ (API 34)"
+                placeholder="Android 15+ (Vanilla Ice Cream, API 36)"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
               />
             </div>
@@ -341,14 +519,14 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   ...config,
                   release: { ...config.release, architecture: e.target.value }
                 })}
-                placeholder="arm64-v8a, armeabi-v7a, x86_64"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                placeholder="arm64-v8a, armeabi-v7a, x86_64 (Universal)"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
               />
             </div>
 
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Direct Download Local URL
+                Direct Download Binary Link (Local path or HTTPS URL)
               </label>
               <input
                 type="text"
@@ -357,9 +535,12 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   ...config,
                   release: { ...config.release, directDownloadUrl: e.target.value }
                 })}
-                placeholder="/downloads/beeguard-v1.0.0.apk"
+                placeholder="/downloads/beeguard-release.apk"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
               />
+              <span className="text-[11px] text-slate-400 mt-1 block">
+                Relative path (e.g. <code className="text-amber-700">/downloads/beeguard-release.apk</code>) or full URL (e.g. Firebase Storage, Google Drive).
+              </span>
             </div>
 
             <div className="sm:col-span-3">
@@ -380,7 +561,23 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
             <div className="sm:col-span-3">
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                SHA-256 Binary Checksum
+                GitHub Direct Binary Download Link
+              </label>
+              <input
+                type="text"
+                value={config.release.githubDirectDownloadUrl}
+                onChange={(e) => onUpdate({
+                  ...config,
+                  release: { ...config.release, githubDirectDownloadUrl: e.target.value }
+                })}
+                placeholder="https://github.com/samyak2403/BeeGuard/releases/download/v1.0.0/app-release.apk"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
+              />
+            </div>
+
+            <div className="sm:col-span-3">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                SHA-256 Binary Checksum (Security Verification)
               </label>
               <input
                 type="text"
@@ -389,11 +586,88 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                   ...config,
                   release: { ...config.release, sha256: e.target.value }
                 })}
-                placeholder="F9F44D726853F5DE031688DA2CB7905C346760A0B7AEB26F27A73FD62ADBBA9C"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
+                placeholder="08DB65E217E26E550DADE5D68BB2613935FB646AE7ED1654898B8D5EB289921B"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono select-all"
               />
             </div>
           </div>
+
+          {/* Live Download Preview Widget */}
+          <div className="pt-4 border-t border-slate-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5 text-amber-600" />
+                Live User Download Card Preview
+              </span>
+              <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-semibold border border-amber-200">
+                Updates in Real-Time
+              </span>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white border border-amber-300 shadow-xs space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500 text-white font-extrabold text-lg flex items-center justify-center shadow-sm">
+                    🐝
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-extrabold text-slate-900">{config.download.boxTitle}</h4>
+                    <p className="text-[11px] text-slate-500">
+                      Release {config.release.version} (Build #{config.release.buildNumber}) • {config.release.releaseDate}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-300">
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                  <span>{config.download.boxSubtitle || 'Verified Production Package'}</span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-amber-500 text-white flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <Download className="w-4 h-4 text-white" />
+                  <div>
+                    <div className="text-xs font-extrabold leading-tight">{config.download.apkButtonLabel}</div>
+                    <div className="text-[10px] text-amber-100 font-normal">
+                      Package: {config.release.fileSize} • Direct: {config.release.directDownloadUrl}
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/20 text-white">
+                  .APK
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1.5 text-slate-600 text-[11px]">
+                <div className="flex items-center justify-between font-semibold">
+                  <span>SHA-256 Checksum:</span>
+                  <span className="text-amber-700 font-mono text-[10px]">{config.release.architecture}</span>
+                </div>
+                <div className="font-mono text-[10px] text-slate-800 bg-slate-50 p-2 rounded border border-slate-100 break-all select-all">
+                  {config.release.sha256}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section Action Footer */}
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-slate-500">
+              Target SDK: <strong>{config.release.targetAndroidVersion}</strong> • Min: <strong>{config.release.minAndroidVersion}</strong>
+            </span>
+
+            <button
+              type="button"
+              onClick={handleSaveClick}
+              disabled={isSaving}
+              className="h-9 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold shadow-sm inline-flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>{isSaving ? 'Saving to Firestore...' : 'Save Release Specs to Firestore'}</span>
+            </button>
+          </div>
+
         </div>
       )}
 
@@ -1088,9 +1362,9 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3 text-xs">
             <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold">Persistent Storage & Live Updates</p>
+              <p className="font-bold">Firestore Real-Time Database Sync</p>
               <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                When you click "Save All Changes", all customizations are saved directly to your browser storage and will be immediately reflected in the public landing page preview and direct visitor sessions.
+                When you click "Save Changes" or "Publish Live", all customizations are saved directly to Firebase Firestore in real-time. Changes are immediately reflected live across all browser sessions, mobile devices, and visitors.
               </p>
             </div>
           </div>
@@ -1111,10 +1385,11 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
         <button
           type="button"
           onClick={handleSaveClick}
-          className="h-10 px-6 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold border border-transparent shadow-md shadow-amber-500/20 inline-flex items-center justify-center gap-2 transition-all cursor-pointer transform hover:-translate-y-0.5"
+          disabled={isSaving}
+          className="h-10 px-6 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold border border-transparent shadow-md shadow-amber-500/20 inline-flex items-center justify-center gap-2 transition-all cursor-pointer transform hover:-translate-y-0.5"
         >
-          <Save className="w-4 h-4" />
-          <span>Save Changes</span>
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : showSavedFeedback ? <CheckCircle2 className="w-4 h-4 text-white" /> : <Save className="w-4 h-4 text-white" />}
+          <span>{isSaving ? 'Saving to Firestore...' : showSavedFeedback ? 'Saved Live to Firestore!' : 'Save All Changes'}</span>
         </button>
       </div>
 

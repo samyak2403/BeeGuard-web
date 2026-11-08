@@ -20,6 +20,12 @@ import {
   OutbreakAlert, 
   UserAccount 
 } from '../types';
+import { 
+  LandingPageConfig, 
+  DEFAULT_LANDING_CONFIG, 
+  AppReleaseInfo, 
+  DEFAULT_APP_RELEASE 
+} from '../landing/types';
 
 // Web Firebase configuration extracted from BeeGuard google-services.json
 export const firebaseConfig = {
@@ -743,5 +749,157 @@ export const updateAdminPassword = async (
   } catch (err: any) {
     console.error('Error updating admin password in Firebase:', err);
     return { success: false, error: err?.message || 'Failed to update password in Firebase' };
+  }
+};
+
+/**
+ * Real-time listener for Landing Page & APK Release configuration stored in Firestore
+ * Document path: system_config/landing_page
+ */
+export const subscribeToLandingConfig = (
+  callback: (config: LandingPageConfig) => void,
+  onError?: (err: FirestoreError) => void
+): (() => void) => {
+  const landingDocRef = doc(db, 'system_config', 'landing_page');
+  
+  return onSnapshot(
+    landingDocRef,
+    async (snapshot) => {
+      try {
+        if (snapshot.exists()) {
+          const rawData = snapshot.data();
+          const merged: LandingPageConfig = {
+            ...DEFAULT_LANDING_CONFIG,
+            ...rawData,
+            release: {
+              ...DEFAULT_LANDING_CONFIG.release,
+              ...(rawData.release || {})
+            },
+            hero: {
+              ...DEFAULT_LANDING_CONFIG.hero,
+              ...(rawData.hero || {}),
+              stats: rawData.hero?.stats || DEFAULT_LANDING_CONFIG.hero.stats
+            },
+            features: rawData.features || DEFAULT_LANDING_CONFIG.features,
+            screens: rawData.screens || DEFAULT_LANDING_CONFIG.screens,
+            download: {
+              ...DEFAULT_LANDING_CONFIG.download,
+              ...(rawData.download || {}),
+              steps: rawData.download?.steps || DEFAULT_LANDING_CONFIG.download.steps
+            }
+          };
+          callback(merged);
+        } else {
+          // Document does not exist yet: seed with production default release & landing data
+          await setDoc(landingDocRef, {
+            ...DEFAULT_LANDING_CONFIG,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          }, { merge: true });
+
+          const releaseDocRef = doc(db, 'system_config', 'app_release');
+          await setDoc(releaseDocRef, {
+            ...DEFAULT_APP_RELEASE,
+            updatedAt: Date.now()
+          }, { merge: true });
+
+          callback(DEFAULT_LANDING_CONFIG);
+        }
+      } catch (err: any) {
+        console.error('Error handling landing config snapshot:', err);
+        callback(DEFAULT_LANDING_CONFIG);
+      }
+    },
+    (err) => {
+      console.error('Failed to subscribe to landing config in Firestore:', err);
+      onError?.(err);
+      callback(DEFAULT_LANDING_CONFIG);
+    }
+  );
+};
+
+/**
+ * Real-time listener for standalone APK Release configuration stored in Firestore
+ * Document path: system_config/app_release
+ */
+export const subscribeToAppRelease = (
+  callback: (release: AppReleaseInfo) => void,
+  onError?: (err: FirestoreError) => void
+): (() => void) => {
+  const releaseDocRef = doc(db, 'system_config', 'app_release');
+  return onSnapshot(
+    releaseDocRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as AppReleaseInfo;
+        callback({
+          ...DEFAULT_APP_RELEASE,
+          ...data
+        });
+      } else {
+        callback(DEFAULT_APP_RELEASE);
+      }
+    },
+    (err) => {
+      console.error('Failed to subscribe to app release in Firestore:', err);
+      onError?.(err);
+      callback(DEFAULT_APP_RELEASE);
+    }
+  );
+};
+
+/**
+ * Save Landing Page and APK Release configuration to Firebase Firestore in real-time
+ */
+export const saveLandingConfigToFirestore = async (
+  config: LandingPageConfig
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const landingDocRef = doc(db, 'system_config', 'landing_page');
+    const releaseDocRef = doc(db, 'system_config', 'app_release');
+    const now = Date.now();
+
+    // 1. Save full landing configuration
+    await setDoc(landingDocRef, {
+      ...config,
+      updatedAt: now
+    }, { merge: true });
+
+    // 2. Save dedicated app_release document for standalone mobile and web queries
+    await setDoc(releaseDocRef, {
+      ...config.release,
+      updatedAt: now
+    }, { merge: true });
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error saving landing config to Firebase:', err);
+    return { success: false, error: err?.message || 'Failed to save configuration to Firestore' };
+  }
+};
+
+/**
+ * Reset Landing Page and APK Release configuration in Firebase Firestore back to production defaults
+ */
+export const resetLandingConfigInFirestore = async (): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const landingDocRef = doc(db, 'system_config', 'landing_page');
+    const releaseDocRef = doc(db, 'system_config', 'app_release');
+    const now = Date.now();
+
+    await setDoc(landingDocRef, {
+      ...DEFAULT_LANDING_CONFIG,
+      updatedAt: now
+    });
+
+    await setDoc(releaseDocRef, {
+      ...DEFAULT_APP_RELEASE,
+      updatedAt: now
+    });
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error resetting landing config in Firebase:', err);
+    return { success: false, error: err?.message || 'Failed to reset configuration in Firestore' };
   }
 };

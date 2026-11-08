@@ -88,22 +88,22 @@ export const DEFAULT_APP_RELEASE: AppReleaseInfo = {
   version: 'v1.0.0',
   buildNumber: 1,
   releaseDate: 'November 2026',
-  fileSize: '45.8 MB',
-  minAndroidVersion: 'Android 8.0 (Oreo, API 26)',
-  targetAndroidVersion: 'Android 14+ (Upside Down Cake, API 34)',
-  architecture: 'arm64-v8a, armeabi-v7a, x86_64',
-  sha256: 'F9F44D726853F5DE031688DA2CB7905C346760A0B7AEB26F27A73FD62ADBBA9C',
+  fileSize: '37.8 MB',
+  minAndroidVersion: 'Android 7.0 (Nougat, API 24)',
+  targetAndroidVersion: 'Android 15+ (Vanilla Ice Cream, API 36)',
+  architecture: 'arm64-v8a, armeabi-v7a, x86_64 (Universal)',
+  sha256: '08DB65E217E26E550DADE5D68BB2613935FB646AE7ED1654898B8D5EB289921B',
   githubRepoUrl: 'https://github.com/samyak2403/BeeGuard',
   githubReleasesUrl: 'https://github.com/samyak2403/BeeGuard/releases',
-  directDownloadUrl: '/downloads/beeguard-v1.0.0.apk',
-  githubDirectDownloadUrl: 'https://github.com/samyak2403/BeeGuard/releases/download/v1.0.0/app-debug.apk'
+  directDownloadUrl: '/downloads/beeguard-release.apk',
+  githubDirectDownloadUrl: 'https://github.com/samyak2403/BeeGuard/releases/download/v1.0.0/app-release.apk'
 };
 
 export const CURRENT_APP_RELEASE = DEFAULT_APP_RELEASE;
 
 export const DEFAULT_HERO_CONFIG: HeroConfig = {
   badgeTitle: 'BeeGuard Android v1.0.0',
-  badgeSubtitle: 'Production APK Available',
+  badgeSubtitle: 'Official Release (37.8 MB)',
   headlinePrefix: 'Smart Honeybee',
   headlineGradient: 'Disease Prediction',
   headlineSuffix: '& Apiary Biosecurity',
