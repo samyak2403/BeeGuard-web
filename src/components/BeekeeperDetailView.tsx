@@ -39,6 +39,7 @@ interface BeekeeperDetailViewProps {
   hives: HiveRecord[];
   scans: DiseaseScanRecord[];
   marketplace: MarketplaceItem[];
+  allUsersCount?: number;
   onBack: () => void;
   onToggleUserStatus: (userId: string, reason?: string) => void;
   onUpdateRole: (userId: string, newRole: UserRole) => void;
@@ -53,6 +54,7 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
   hives,
   scans,
   marketplace,
+  allUsersCount,
   onBack,
   onToggleUserStatus,
   onUpdateRole,
@@ -65,6 +67,7 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
   const [isCopiedId, setIsCopiedId] = useState(false);
   const [selectedScan, setSelectedScan] = useState<DiseaseScanRecord | null>(null);
   const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
+  const [showAllFieldScans, setShowAllFieldScans] = useState<boolean>(false);
 
   const isSuspended = user.status === 'suspended';
 
@@ -87,23 +90,60 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
 
   // Associated hives for this beekeeper
   const userHives = hives.filter(h => 
-    h.beekeeperId === user.id || 
-    h.beekeeperName.toLowerCase() === user.fullName.toLowerCase() ||
-    (user.fullName.toLowerCase().includes('samyak') && h.beekeeperName.toLowerCase().includes('samyak'))
+    (h.beekeeperId && (h.beekeeperId === user.id || h.beekeeperId === user.email)) || 
+    (h.beekeeperName && user.fullName && h.beekeeperName.toLowerCase() === user.fullName.toLowerCase()) ||
+    (user.fullName.toLowerCase().includes('samyak') && h.beekeeperName.toLowerCase().includes('samyak')) ||
+    ((allUsersCount ?? 1) <= 1)
   );
 
   // Associated scans for this beekeeper
-  const userScans = scans.filter(s => 
-    s.beekeeperName.toLowerCase() === user.fullName.toLowerCase() ||
-    (user.fullName.toLowerCase().includes('samyak') && s.beekeeperName.toLowerCase().includes('samyak')) ||
-    userHives.some(h => h.id === s.hiveId || (s.apiaryLocation && s.apiaryLocation.includes(h.name)))
-  );
+  const userScans = scans.filter(s => {
+    // 1. Direct UID or Email match
+    if (s.userId && (s.userId === user.id || s.userId === user.email)) {
+      return true;
+    }
+
+    // 2. Exact or normalized beekeeper name match
+    if (s.beekeeperName && s.beekeeperName !== 'Beekeeper' && user.fullName) {
+      const scanKeeper = s.beekeeperName.toLowerCase().trim();
+      const userKeeper = user.fullName.toLowerCase().trim();
+      if (scanKeeper === userKeeper || scanKeeper.includes(userKeeper) || userKeeper.includes(scanKeeper)) {
+        return true;
+      }
+    }
+
+    // 3. Fallback for Samyak / developer accounts
+    if (user.fullName.toLowerCase().includes('samyak') && s.beekeeperName.toLowerCase().includes('samyak')) {
+      return true;
+    }
+
+    // 4. Matches any of this beekeeper's hives
+    if (userHives.length > 0 && userHives.some(h => 
+      (s.hiveId && (h.id === s.hiveId || h.id.endsWith(s.hiveId) || s.hiveId.endsWith(h.id))) ||
+      (s.hiveName && h.name && s.hiveName.toLowerCase() === h.name.toLowerCase()) ||
+      (s.apiaryLocation && h.name && s.apiaryLocation.toLowerCase().includes(h.name.toLowerCase()))
+    )) {
+      return true;
+    }
+
+    // 5. If this is the only registered beekeeper in the directory, or guest/unassigned scan
+    if ((!s.userId || s.userId === 'guest_beeguard_user' || s.userId === 'guest') && ((allUsersCount ?? 1) <= 1 || userHives.length > 0)) {
+      return true;
+    }
+
+    return false;
+  });
+
+  const displayedScans = showAllFieldScans 
+    ? scans 
+    : (userScans.length > 0 ? userScans : ((allUsersCount ?? 1) <= 1 ? scans : []));
 
   // Associated marketplace items
   const userProducts = marketplace.filter(m => 
-    m.sellerId === user.id || 
-    m.sellerName.toLowerCase() === user.fullName.toLowerCase() ||
-    (user.fullName.toLowerCase().includes('samyak') && m.sellerName.toLowerCase().includes('samyak'))
+    (m.sellerId && (m.sellerId === user.id || m.sellerId === user.email)) || 
+    (m.sellerName && user.fullName && m.sellerName.toLowerCase() === user.fullName.toLowerCase()) ||
+    (user.fullName.toLowerCase().includes('samyak') && m.sellerName.toLowerCase().includes('samyak')) ||
+    ((allUsersCount ?? 1) <= 1)
   );
 
   // Health summary of user's hives
@@ -357,7 +397,7 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
             <Activity className="w-4 h-4 text-blue-600" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">{userScans.length}</span>
+            <span className="text-2xl font-bold text-slate-900">{displayedScans.length}</span>
             <span className="text-xs text-slate-400">records</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
@@ -433,7 +473,7 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
           <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
             activeSubTab === 'scans' ? 'bg-emerald-700 text-white' : 'bg-slate-200 text-slate-700'
           }`}>
-            {userScans.length}
+            {displayedScans.length}
           </span>
         </button>
         <button
@@ -589,11 +629,11 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
 
                 <button
                   onClick={() => setActiveSubTab('scans')}
-                  className="w-full py-2 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-medium flex items-center justify-between transition-colors"
+                  className="w-full py-2 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-medium flex items-center justify-between transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-blue-600" />
-                    <span>View Diagnosis History ({userScans.length})</span>
+                    <span>View Diagnosis History ({displayedScans.length})</span>
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                 </button>
@@ -694,26 +734,47 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
       {/* Disease Scans Sub Tab */}
       {activeSubTab === 'scans' && (
         <div className="space-y-4">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">
-              AI Diagnostic Scans Recorded by {user.fullName}
-            </h2>
-            <p className="text-xs text-slate-500">
-              Real AI model inspections performed by this beekeeper in the field
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                AI Diagnostic Scans Recorded by {user.fullName}
+              </h2>
+              <p className="text-xs text-slate-500">
+                {displayedScans.length > 0
+                  ? `${displayedScans.length} diagnostic camera inspections recorded in the field`
+                  : 'Real AI model inspections performed by this beekeeper in the field'}
+              </p>
+            </div>
+
+            {scans.length > 0 && (
+              <button
+                onClick={() => setShowAllFieldScans(prev => !prev)}
+                className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-semibold self-start sm:self-auto cursor-pointer transition-colors"
+              >
+                {showAllFieldScans ? 'Show Only Beekeeper Scans' : `Show All Field Scans (${scans.length})`}
+              </button>
+            )}
           </div>
 
-          {userScans.length === 0 ? (
-            <div className="p-8 bg-white rounded-xl border border-slate-200 text-center space-y-2">
+          {displayedScans.length === 0 ? (
+            <div className="p-8 bg-white rounded-xl border border-slate-200 text-center space-y-3">
               <Activity className="w-8 h-8 text-slate-300 mx-auto" />
               <p className="text-sm font-semibold text-slate-700">No Disease Scans Found</p>
               <p className="text-xs text-slate-400">
                 No diagnostic camera scans recorded under this beekeeper's account yet.
               </p>
+              {scans.length > 0 && (
+                <button
+                  onClick={() => setShowAllFieldScans(true)}
+                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer shadow-sm transition-all"
+                >
+                  View All {scans.length} System Diagnostic Scans
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {userScans.map(scan => (
+              {displayedScans.map(scan => (
                 <div 
                   key={scan.id} 
                   onClick={() => setSelectedScan(scan)}
@@ -726,6 +787,9 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
                       alt={scan.diseaseName}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=600&q=80';
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                     <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">

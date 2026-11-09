@@ -43,6 +43,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
         hives={hives}
         scans={scans}
         marketplace={marketplace}
+        allUsersCount={users.length}
         onBack={() => setSelectedUserId(null)}
         onToggleUserStatus={onToggleUserStatus}
         onUpdateRole={onUpdateRole}
@@ -163,6 +164,19 @@ export const UsersTab: React.FC<UsersTabProps> = ({
               BEEKEEPER: 'bg-slate-100 text-slate-700 border border-slate-200'
             };
 
+            const userHiveCount = hives.filter(h => 
+              (h.beekeeperId && (h.beekeeperId === user.id || h.beekeeperId === user.email)) || 
+              (h.beekeeperName && user.fullName && h.beekeeperName.toLowerCase() === user.fullName.toLowerCase()) ||
+              (users.length === 1)
+            ).length || user.hivesCount || 0;
+
+            const userScanCount = scans.filter(s => 
+              (s.userId && (s.userId === user.id || s.userId === user.email)) ||
+              (s.beekeeperName && s.beekeeperName !== 'Beekeeper' && user.fullName && s.beekeeperName.toLowerCase() === user.fullName.toLowerCase()) ||
+              hives.some(h => (h.beekeeperId === user.id) && ((s.hiveId && h.id === s.hiveId) || (s.hiveName && h.name && s.hiveName.toLowerCase() === h.name.toLowerCase()))) ||
+              ((!s.userId || s.userId === 'guest_beeguard_user' || s.userId === 'guest') && users.length === 1)
+            ).length;
+
             return (
               <div
                 key={user.id}
@@ -224,9 +238,11 @@ export const UsersTab: React.FC<UsersTabProps> = ({
 
                 <div className="pt-4 space-y-3">
                   <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="text-slate-500 font-medium truncate mr-1">
-                      Managed Hives: <strong className="text-slate-900">{user.hivesCount}</strong>
-                    </span>
+                    <div className="flex items-center gap-2 text-slate-500 font-medium text-[11px] truncate mr-1">
+                      <span>Hives: <strong className="text-slate-900">{userHiveCount}</strong></span>
+                      <span className="text-slate-300">•</span>
+                      <span>AI Scans: <strong className="text-emerald-700">{userScanCount}</strong></span>
+                    </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       {user.role === 'BEEKEEPER' && (

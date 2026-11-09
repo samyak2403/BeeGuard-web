@@ -154,14 +154,14 @@ export const subscribeToHives = (
 
         return {
           id: d.id,
-          name: data.hiveName || 'Colony ' + d.id.slice(-4),
-          apiaryLocation: data.location || 'Apiary Zone',
-          beekeeperId: data.userId || '',
-          beekeeperName: data.beekeeperName || 'Registered Apiarist',
+          name: data.hiveName || data.name || 'Colony ' + d.id.slice(-4),
+          apiaryLocation: data.location || data.apiaryLocation || 'Apiary Zone',
+          beekeeperId: data.userId || data.uid || data.user_id || data.beekeeperId || '',
+          beekeeperName: data.beekeeperName || data.userName || 'Registered Apiarist',
           healthStatus,
           primaryDiagnosis: data.primaryDiagnosis || undefined,
           lastInspectionDate: formatSafeDate(data.updatedAt || data.createdAt),
-          honeyYieldKg: Number(data.honeyProduction || 0),
+          honeyYieldKg: Number(data.honeyProduction || data.honeyYieldKg || 0),
           queenStatus: (data.queenStatus === 'REPLACED' ? 'SUPERSEDED' : data.queenStatus === 'NOT_SEEN_NO_EGGS' ? 'ABSENT' : 'ACTIVE') as any,
           frameCount: data.frameCount || 10
         };
@@ -205,17 +205,17 @@ export const subscribeToScans = (
 
         return {
           id: d.id,
-          beekeeperName: data.beekeeperName || 'Beekeeper',
-          apiaryLocation: data.hiveName ? `Hive: ${data.hiveName}` : 'Field Scan',
+          beekeeperName: data.beekeeperName || data.userName || data.beekeeper || 'Beekeeper',
+          apiaryLocation: data.hiveName ? `Hive: ${data.hiveName}` : (data.location || data.apiaryLocation || 'Field Scan'),
           diseaseName: predicted,
           confidence: conf > 1 ? conf / 100 : conf,
           urgencyLevel: isCritical ? 'CRITICAL' : predicted === 'Healthy' ? 'LOW' : 'MODERATE',
           timestamp: formatSafeDateTime(data.timestamp || data.createdAt),
           imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=600&q=80',
           status: data.isQuarantined ? 'QUARANTINED' : data.isResolved ? 'RESOLVED' : 'CONFIRMED',
-          hiveId: data.hiveId,
-          hiveName: data.hiveName || undefined,
-          userId: data.userId || undefined,
+          hiveId: data.hiveId || data.hive_id || undefined,
+          hiveName: data.hiveName || data.hive_name || undefined,
+          userId: data.userId || data.uid || data.user_id || undefined,
           classProbabilities: classProbabilities || undefined,
           notes: data.notes || undefined
         };

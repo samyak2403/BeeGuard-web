@@ -306,27 +306,89 @@ export const App: React.FC = () => {
     showToast('info', 'Live Telemetry Synced', 'Live Firestore streams and mobile app data active.');
   };
 
+  // Enrich hives with Beekeeper full names from Users
+  const enrichedHives = useMemo(() => {
+    return hives.map((hive) => {
+      const matchedUser = users.find((u) => 
+        (hive.beekeeperId && (u.id === hive.beekeeperId || u.email === hive.beekeeperId)) ||
+        (u.fullName && hive.beekeeperName && hive.beekeeperName !== 'Registered Apiarist' && u.fullName.toLowerCase() === hive.beekeeperName.toLowerCase())
+      ) || (users.length === 1 ? users[0] : undefined);
+
+      const beekeeperName = (hive.beekeeperName && hive.beekeeperName !== 'Registered Apiarist')
+        ? hive.beekeeperName
+        : (matchedUser?.fullName || (users.length === 1 ? users[0].fullName : hive.beekeeperName || 'Registered Apiarist'));
+
+      return {
+        ...hive,
+        beekeeperName,
+        beekeeperId: hive.beekeeperId || matchedUser?.id || ''
+      };
+    });
+  }, [hives, users]);
+
+  // Enrich scans with Beekeeper full names and Hive locations
+  const enrichedScans = useMemo(() => {
+    return scans.map((scan) => {
+      // 1. Direct user match by id or email
+      let matchedUser = users.find((u) => 
+        (scan.userId && (u.id === scan.userId || u.email === scan.userId)) ||
+        (u.fullName && scan.beekeeperName && scan.beekeeperName !== 'Beekeeper' && u.fullName.toLowerCase() === scan.beekeeperName.toLowerCase())
+      );
+
+      // 2. Direct hive match by id or name
+      const matchedHive = enrichedHives.find((h) => 
+        (scan.hiveId && (h.id === scan.hiveId || h.id.endsWith(scan.hiveId) || scan.hiveId.endsWith(h.id))) ||
+        (scan.hiveName && h.name && h.name.toLowerCase() === scan.hiveName.toLowerCase())
+      );
+
+      if (!matchedUser && matchedHive?.beekeeperId) {
+        matchedUser = users.find((u) => u.id === matchedHive.beekeeperId);
+      }
+
+      // If only one registered user exists in system, link unassigned/guest scans
+      if (!matchedUser && users.length === 1) {
+        matchedUser = users[0];
+      }
+
+      const beekeeperName = (scan.beekeeperName && scan.beekeeperName !== 'Beekeeper')
+        ? scan.beekeeperName
+        : (matchedUser?.fullName || matchedHive?.beekeeperName || 'Beekeeper');
+
+      const apiaryLocation = (scan.apiaryLocation && scan.apiaryLocation !== 'Field Scan' && !scan.apiaryLocation.includes('undefined'))
+        ? scan.apiaryLocation
+        : (matchedHive ? `Hive: ${matchedHive.name}` : scan.hiveName ? `Hive: ${scan.hiveName}` : scan.apiaryLocation || 'Field Scan');
+
+      return {
+        ...scan,
+        beekeeperName,
+        apiaryLocation,
+        userId: scan.userId || matchedUser?.id,
+        hiveName: scan.hiveName || matchedHive?.name
+      };
+    });
+  }, [scans, users, enrichedHives]);
+
   // Search filtering
   const filteredScans = useMemo(() => {
-    if (!searchTerm.trim()) return scans;
+    if (!searchTerm.trim()) return enrichedScans;
     const q = searchTerm.toLowerCase();
-    return scans.filter(s => 
+    return enrichedScans.filter(s => 
       s.diseaseName.toLowerCase().includes(q) ||
       s.beekeeperName.toLowerCase().includes(q) ||
       s.apiaryLocation.toLowerCase().includes(q)
     );
-  }, [scans, searchTerm]);
+  }, [enrichedScans, searchTerm]);
 
   const filteredHives = useMemo(() => {
-    if (!searchTerm.trim()) return hives;
+    if (!searchTerm.trim()) return enrichedHives;
     const q = searchTerm.toLowerCase();
-    return hives.filter(h => 
+    return enrichedHives.filter(h => 
       h.name.toLowerCase().includes(q) ||
       h.beekeeperName.toLowerCase().includes(q) ||
       h.apiaryLocation.toLowerCase().includes(q) ||
       (h.primaryDiagnosis && h.primaryDiagnosis.toLowerCase().includes(q))
     );
-  }, [hives, searchTerm]);
+  }, [enrichedHives, searchTerm]);
 
   const filteredMarketplace = useMemo(() => {
     if (!searchTerm.trim()) return marketplace;
@@ -425,7 +487,7 @@ export const App: React.FC = () => {
           {activeTab === 'overview' && (
             <OverviewTab 
               metrics={metrics}
-              recentScans={scans}
+              recentScans={enrichedScans}
               activeOutbreaks={outbreaks}
               onNavigateToScans={() => setActiveTab('scans')}
               onNavigateToOutbreaks={() => setActiveTab('outbreaks')}
@@ -450,7 +512,7 @@ export const App: React.FC = () => {
           {activeTab === 'hives' && (
             <HivesTab 
               hives={filteredHives}
-              scans={scans}
+              scans={enrichedScans}
               onAddNewHive={handleAddNewHive}
               onTriggerOutbreakBroadcast={() => setIsAlertModalOpen(true)}
               onShowToast={showToast}
@@ -469,8 +531,8 @@ export const App: React.FC = () => {
           {activeTab === 'users' && (
             <UsersTab 
               users={filteredUsers}
-              hives={hives}
-              scans={scans}
+              hives={enrichedHives}
+              scans={enrichedScans}
               marketplace={marketplace}
               onToggleUserStatus={handleToggleUserStatus}
               onUpdateRole={handleUpdateUserRole}
@@ -484,8 +546,8 @@ export const App: React.FC = () => {
           {activeTab === 'outbreaks' && (
             <OutbreaksTab 
               outbreaks={outbreaks}
-              hives={hives}
-              scans={scans}
+              hives={enrichedHives}
+              scans={enrichedScans}
               onTriggerBroadcast={() => setIsAlertModalOpen(true)}
               onUpdateOutbreakStatus={handleUpdateOutbreakStatus}
               onDeleteOutbreak={handleDeleteOutbreak}
@@ -506,9 +568,9 @@ export const App: React.FC = () => {
               onBackToDashboard={() => setActiveTab('overview')} 
               onShowToast={showToast}
               onSignOut={handleSignOut}
-              scans={scans}
+              scans={enrichedScans}
               users={users}
-              hives={hives}
+              hives={enrichedHives}
               outbreaks={outbreaks}
             />
           )}
