@@ -222,7 +222,11 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
               
               {/* Brand */}
               <div className="flex items-center gap-2.5">
-                <span className="text-2xl">🐝</span>
+                <img 
+                  src="/logo.png" 
+                  alt="BeeGuard Logo" 
+                  className="w-8 h-8 object-contain shrink-0" 
+                />
                 <div>
                   <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">
                     {config.brandName}

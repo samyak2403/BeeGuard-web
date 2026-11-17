@@ -121,14 +121,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title="BeeGuard Central Intelligence"
           >
             {/* Custom Photographic Apiary Logo */}
-            <div className="relative w-9 h-9 rounded-xl overflow-hidden ring-2 ring-amber-400/90 shadow-xs shadow-amber-500/10 shrink-0 group-hover:scale-105 group-hover:ring-amber-500 transition-all duration-200 bg-amber-50">
+            <div className="relative w-9 h-9 rounded-xl overflow-hidden ring-2 ring-amber-400/90 shadow-xs shadow-amber-500/10 shrink-0 group-hover:scale-105 group-hover:ring-amber-500 transition-all duration-200 bg-white flex items-center justify-center p-0.5">
               <img 
-                src="/login-hero.jpg" 
+                src="/logo.png" 
                 alt="BeeGuard" 
-                className="w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-300"
+                className="w-full h-full object-contain transform group-hover:scale-110 transition-transform duration-300"
               />
-              <div className="absolute inset-0 bg-gradient-to-tr from-amber-950/20 via-transparent to-amber-400/10 pointer-events-none" />
-              <span className="absolute -bottom-1 -right-1 text-[10px] filter drop-shadow">🐝</span>
             </div>
 
             {!isCollapsed && (

@@ -118,36 +118,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div className="w-full max-w-sm space-y-7 animate-in fade-in duration-300">
           {/* Brand Crest / Emblem matching reference's "HARINAS ELIZONDO" style */}
           <div className="text-center flex flex-col items-center">
-            {/* Ornate Bee Crest SVG */}
-            <div className="w-24 h-24 mb-3 flex items-center justify-center text-amber-600 relative">
-              <svg 
-                viewBox="0 0 120 120" 
-                className="w-full h-full fill-none stroke-current"
-                strokeWidth="1.8"
-              >
-                {/* Outer Crest Ring / Shield */}
-                <path 
-                  d="M60 10 L95 24 V65 C95 88 60 110 60 110 C60 110 25 88 25 65 V24 Z" 
-                  className="stroke-amber-600 fill-amber-50/50" 
-                  strokeWidth="2.2"
-                />
-                {/* Inner Hexagon Frame */}
-                <polygon 
-                  points="60,32 80,44 80,68 60,80 40,68 40,44" 
-                  className="stroke-amber-500/80 fill-amber-100/40" 
-                  strokeWidth="1.5"
-                />
-                {/* Laurel Leaves left */}
-                <path d="M20 50 C18 60 22 72 30 80" className="stroke-slate-400" strokeWidth="1.2" strokeDasharray="2 3" />
-                {/* Laurel Leaves right */}
-                <path d="M100 50 C102 60 98 72 90 80" className="stroke-slate-400" strokeWidth="1.2" strokeDasharray="2 3" />
-                {/* 3 Stars at Top */}
-                <circle cx="50" cy="22" r="1.5" className="fill-amber-500" stroke="none" />
-                <circle cx="60" cy="18" r="2.2" className="fill-amber-600" stroke="none" />
-                <circle cx="70" cy="22" r="1.5" className="fill-amber-500" stroke="none" />
-              </svg>
-              {/* Center Bee Emoji inside Crest */}
-              <span className="absolute text-3xl transform -translate-y-0.5 filter drop-shadow">🐝</span>
+            {/* Official BeeGuard Emblem Logo */}
+            <div className="w-24 h-24 mb-3 flex items-center justify-center relative">
+              <img 
+                src="/logo.png" 
+                alt="BeeGuard" 
+                className="w-full h-full object-contain filter drop-shadow-md" 
+              />
             </div>
 
             {/* Typography */}
