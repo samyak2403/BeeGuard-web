@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Custom Photographic Apiary Logo */}
             <div className="relative w-9 h-9 rounded-xl overflow-hidden ring-2 ring-amber-400/90 shadow-xs shadow-amber-500/10 shrink-0 group-hover:scale-105 group-hover:ring-amber-500 transition-all duration-200 bg-white flex items-center justify-center p-0.5">
               <img 
-                src="/logo.png" 
+                src="/logo.webp" 
                 alt="BeeGuard" 
                 className="w-full h-full object-contain transform group-hover:scale-110 transition-transform duration-300"
               />

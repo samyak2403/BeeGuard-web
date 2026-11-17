@@ -223,7 +223,7 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
               {/* Brand */}
               <div className="flex items-center gap-2.5">
                 <img 
-                  src="/logo.png" 
+                  src="/logo.webp" 
                   alt="BeeGuard Logo" 
                   className="w-8 h-8 object-contain shrink-0" 
                 />

@@ -121,7 +121,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             {/* Official BeeGuard Emblem Logo */}
             <div className="w-24 h-24 mb-3 flex items-center justify-center relative">
               <img 
-                src="/logo.png" 
+                src="/logo.webp" 
                 alt="BeeGuard" 
                 className="w-full h-full object-contain filter drop-shadow-md" 
               />
