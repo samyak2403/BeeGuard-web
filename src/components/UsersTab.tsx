@@ -43,7 +43,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
         hives={hives}
         scans={scans}
         marketplace={marketplace}
-        allUsersCount={users.length}
         onBack={() => setSelectedUserId(null)}
         onToggleUserStatus={onToggleUserStatus}
         onUpdateRole={onUpdateRole}
@@ -166,15 +165,13 @@ export const UsersTab: React.FC<UsersTabProps> = ({
 
             const userHiveCount = hives.filter(h => 
               (h.beekeeperId && (h.beekeeperId === user.id || h.beekeeperId === user.email)) || 
-              (h.beekeeperName && user.fullName && h.beekeeperName.toLowerCase() === user.fullName.toLowerCase()) ||
-              (users.length === 1)
+              (h.beekeeperName && user.fullName && h.beekeeperName.toLowerCase() === user.fullName.toLowerCase())
             ).length || user.hivesCount || 0;
 
             const userScanCount = scans.filter(s => 
               (s.userId && (s.userId === user.id || s.userId === user.email)) ||
               (s.beekeeperName && s.beekeeperName !== 'Beekeeper' && user.fullName && s.beekeeperName.toLowerCase() === user.fullName.toLowerCase()) ||
-              hives.some(h => (h.beekeeperId === user.id) && ((s.hiveId && h.id === s.hiveId) || (s.hiveName && h.name && s.hiveName.toLowerCase() === h.name.toLowerCase()))) ||
-              ((!s.userId || s.userId === 'guest_beeguard_user' || s.userId === 'guest') && users.length === 1)
+              hives.some(h => (h.beekeeperId === user.id) && ((s.hiveId && h.id === s.hiveId) || (s.hiveName && h.name && s.hiveName.toLowerCase() === h.name.toLowerCase())))
             ).length;
 
             return (

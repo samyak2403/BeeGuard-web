@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
-  const displayName = adminName || 'Samyak Kamble';
+  const displayName = adminName || 'Administrator';
   const displayRole = adminRole || 'Super Administrator';
   const displayInitials = displayName
     .trim()
@@ -54,7 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(n => n[0])
     .join('')
     .slice(0, 2)
-    .toUpperCase() || 'SK';
+    .toUpperCase() || 'AD';
 
   const navItems = [
     { id: 'overview' as TabType, label: 'Dashboard', icon: LayoutDashboard },

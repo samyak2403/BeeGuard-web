@@ -440,7 +440,7 @@ export const seedAdminAuthCredentials = async (): Promise<boolean> => {
       email: SUPER_ADMIN_CREDENTIALS.email,
       securityKey: SUPER_ADMIN_CREDENTIALS.securityKey,
       role: 'SUPER_ADMIN',
-      fullName: 'Samyak Kamble',
+      fullName: 'Administrator',
       designation: 'Chief Super Administrator',
       clearanceLevel: 'LEVEL_4',
       status: 'active',
@@ -544,7 +544,7 @@ export const registerAdminAccount = async (
     // 1. Store in admin_auth/super_admin
     const adminAuthRef = doc(db, 'admin_auth', 'super_admin');
     await setDoc(adminAuthRef, {
-      fullName: params.fullName || 'Samyak Kamble',
+      fullName: params.fullName || 'Administrator',
       email: cleanEmail,
       password: params.password,
       securityKey: cleanKey,
@@ -563,7 +563,7 @@ export const registerAdminAccount = async (
     const userDocRef = doc(db, COLLECTIONS.USERS, userDocId);
     await setDoc(userDocRef, {
       id: userDocId,
-      fullName: params.fullName || 'Samyak Kamble',
+      fullName: params.fullName || 'Administrator',
       email: cleanEmail,
       role: 'ADMIN',
       phone: params.phone || '+91 98765 43210',
@@ -608,7 +608,7 @@ export interface AdminProfileData {
 }
 
 export const DEFAULT_ADMIN_PROFILE: AdminProfileData = {
-  fullName: 'Samyak Kamble',
+  fullName: 'Administrator',
   email: SUPER_ADMIN_CREDENTIALS.email,
   designation: 'Chief Super Administrator',
   department: 'National Bee Board (NBB) & BeeGuard Intelligence Directorate',

@@ -111,7 +111,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Welcome Title */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">
-          Welcome back, {adminName || 'Samyak'}!
+          Welcome back, {adminName || 'Administrator'}!
         </h1>
         <p className="text-slate-600 text-sm">
           Here's your apiary and bee colony health overview. Click any detection to review full diagnostic dossier.

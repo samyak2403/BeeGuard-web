@@ -25,8 +25,8 @@ export const HivesTab: React.FC<HivesTabProps> = ({
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
 
   const [newHiveName, setNewHiveName] = useState('');
-  const [newApiary, setNewApiary] = useState('Kolhapur Apiary Alpha');
-  const [newKeeper, setNewKeeper] = useState('Samyak Kamble');
+  const [newApiary, setNewApiary] = useState('');
+  const [newKeeper, setNewKeeper] = useState('');
   const [newFrames, setNewFrames] = useState(10);
   const [newQueen, setNewQueen] = useState<'ACTIVE' | 'SUPERSEDED' | 'ABSENT'>('ACTIVE');
 
@@ -56,10 +56,10 @@ export const HivesTab: React.FC<HivesTabProps> = ({
     if (!newHiveName.trim()) return;
 
     onAddNewHive({
-      name: newHiveName,
-      apiaryLocation: newApiary,
-      beekeeperId: 'usr-001',
-      beekeeperName: newKeeper,
+      name: newHiveName.trim(),
+      apiaryLocation: newApiary.trim() || 'Apiary Zone',
+      beekeeperId: '',
+      beekeeperName: newKeeper.trim() || 'Registered Apiarist',
       healthStatus: 'HEALTHY',
       lastInspectionDate: new Date().toISOString().split('T')[0],
       honeyYieldKg: 20.0,
@@ -72,6 +72,8 @@ export const HivesTab: React.FC<HivesTabProps> = ({
     }
 
     setNewHiveName('');
+    setNewApiary('');
+    setNewKeeper('');
     setShowAddModal(false);
   };
 
@@ -241,6 +243,7 @@ export const HivesTab: React.FC<HivesTabProps> = ({
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Kolhapur Apiary Alpha"
                   value={newApiary}
                   onChange={(e) => setNewApiary(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-500"
@@ -252,6 +255,7 @@ export const HivesTab: React.FC<HivesTabProps> = ({
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Beekeeper Name"
                   value={newKeeper}
                   onChange={(e) => setNewKeeper(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-500"

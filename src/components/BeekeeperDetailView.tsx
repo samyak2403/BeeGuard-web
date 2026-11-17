@@ -39,7 +39,6 @@ interface BeekeeperDetailViewProps {
   hives: HiveRecord[];
   scans: DiseaseScanRecord[];
   marketplace: MarketplaceItem[];
-  allUsersCount?: number;
   onBack: () => void;
   onToggleUserStatus: (userId: string, reason?: string) => void;
   onUpdateRole: (userId: string, newRole: UserRole) => void;
@@ -54,7 +53,6 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
   hives,
   scans,
   marketplace,
-  allUsersCount,
   onBack,
   onToggleUserStatus,
   onUpdateRole,
@@ -91,9 +89,7 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
   // Associated hives for this beekeeper
   const userHives = hives.filter(h => 
     (h.beekeeperId && (h.beekeeperId === user.id || h.beekeeperId === user.email)) || 
-    (h.beekeeperName && user.fullName && h.beekeeperName.toLowerCase() === user.fullName.toLowerCase()) ||
-    (user.fullName.toLowerCase().includes('samyak') && h.beekeeperName.toLowerCase().includes('samyak')) ||
-    ((allUsersCount ?? 1) <= 1)
+    (h.beekeeperName && user.fullName && h.beekeeperName.toLowerCase() === user.fullName.toLowerCase())
   );
 
   // Associated scans for this beekeeper
@@ -107,17 +103,12 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
     if (s.beekeeperName && s.beekeeperName !== 'Beekeeper' && user.fullName) {
       const scanKeeper = s.beekeeperName.toLowerCase().trim();
       const userKeeper = user.fullName.toLowerCase().trim();
-      if (scanKeeper === userKeeper || scanKeeper.includes(userKeeper) || userKeeper.includes(scanKeeper)) {
+      if (scanKeeper === userKeeper) {
         return true;
       }
     }
 
-    // 3. Fallback for Samyak / developer accounts
-    if (user.fullName.toLowerCase().includes('samyak') && s.beekeeperName.toLowerCase().includes('samyak')) {
-      return true;
-    }
-
-    // 4. Matches any of this beekeeper's hives
+    // 3. Matches any of this beekeeper's hives
     if (userHives.length > 0 && userHives.some(h => 
       (s.hiveId && (h.id === s.hiveId || h.id.endsWith(s.hiveId) || s.hiveId.endsWith(h.id))) ||
       (s.hiveName && h.name && s.hiveName.toLowerCase() === h.name.toLowerCase()) ||
@@ -126,24 +117,15 @@ export const BeekeeperDetailView: React.FC<BeekeeperDetailViewProps> = ({
       return true;
     }
 
-    // 5. If this is the only registered beekeeper in the directory, or guest/unassigned scan
-    if ((!s.userId || s.userId === 'guest_beeguard_user' || s.userId === 'guest') && ((allUsersCount ?? 1) <= 1 || userHives.length > 0)) {
-      return true;
-    }
-
     return false;
   });
 
-  const displayedScans = showAllFieldScans 
-    ? scans 
-    : (userScans.length > 0 ? userScans : ((allUsersCount ?? 1) <= 1 ? scans : []));
+  const displayedScans = showAllFieldScans ? scans : userScans;
 
   // Associated marketplace items
   const userProducts = marketplace.filter(m => 
     (m.sellerId && (m.sellerId === user.id || m.sellerId === user.email)) || 
-    (m.sellerName && user.fullName && m.sellerName.toLowerCase() === user.fullName.toLowerCase()) ||
-    (user.fullName.toLowerCase().includes('samyak') && m.sellerName.toLowerCase().includes('samyak')) ||
-    ((allUsersCount ?? 1) <= 1)
+    (m.sellerName && user.fullName && m.sellerName.toLowerCase() === user.fullName.toLowerCase())
   );
 
   // Health summary of user's hives

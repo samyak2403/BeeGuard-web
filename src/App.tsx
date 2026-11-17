@@ -312,11 +312,11 @@ export const App: React.FC = () => {
       const matchedUser = users.find((u) => 
         (hive.beekeeperId && (u.id === hive.beekeeperId || u.email === hive.beekeeperId)) ||
         (u.fullName && hive.beekeeperName && hive.beekeeperName !== 'Registered Apiarist' && u.fullName.toLowerCase() === hive.beekeeperName.toLowerCase())
-      ) || (users.length === 1 ? users[0] : undefined);
+      );
 
       const beekeeperName = (hive.beekeeperName && hive.beekeeperName !== 'Registered Apiarist')
         ? hive.beekeeperName
-        : (matchedUser?.fullName || (users.length === 1 ? users[0].fullName : hive.beekeeperName || 'Registered Apiarist'));
+        : (matchedUser?.fullName || hive.beekeeperName || 'Registered Apiarist');
 
       return {
         ...hive,
@@ -343,11 +343,6 @@ export const App: React.FC = () => {
 
       if (!matchedUser && matchedHive?.beekeeperId) {
         matchedUser = users.find((u) => u.id === matchedHive.beekeeperId);
-      }
-
-      // If only one registered user exists in system, link unassigned/guest scans
-      if (!matchedUser && users.length === 1) {
-        matchedUser = users[0];
       }
 
       const beekeeperName = (scan.beekeeperName && scan.beekeeperName !== 'Beekeeper')
